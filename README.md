@@ -25,7 +25,7 @@
 
 ## 데모
 
-[데모 바로가기](https://co-cal.vercel.app/)
+[데모 바로가기](https://www.kimdohyeon.dev/login)
 
 
 ---
