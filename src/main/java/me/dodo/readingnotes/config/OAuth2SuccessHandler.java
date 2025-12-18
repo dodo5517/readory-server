@@ -11,11 +11,13 @@ import me.dodo.readingnotes.util.DeviceInfoParser;
 import me.dodo.readingnotes.util.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -24,11 +26,14 @@ import java.time.ZoneId;
 // Spring Security의 설정 흐름에 직접 참여하는 구성요소이기 때문에 config에 저장.
 @Component
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
-
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private static final Logger log = LoggerFactory.getLogger(OAuth2SuccessHandler.class);
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
 
     public OAuth2SuccessHandler(final JwtTokenProvider jwtTokenProvider,
                                 final UserRepository userRepository,
@@ -65,7 +70,11 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 .toInstant().atZone(ZoneId.of("Asia/Seoul")).toLocalDateTime();
 
         // DB에 refreshToken 저장
-        refreshTokenRepository.upsert(user.getId(), deviceInfo, refreshToken, refreshExpiry);
+        try {
+            refreshTokenRepository.upsert(user.getId(), deviceInfo, refreshToken, refreshExpiry);
+        } catch (Exception e) {
+            log.error("Failed to upsert refresh token", e);
+        }
 
         // access 토큰 만료까지 남은 시간
         long expiresIn = jwtTokenProvider.getRemainingSeconds(accessToken);
@@ -78,9 +87,15 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         // 헤더에 저장
         response.addHeader("Set-Cookie", refreshCookie.toString());
 
-        // 프론트로 accessToken과 함께 리디렉션
-        String redirectUrl = "http://localhost:3000/oauth/callback?accessToken=" + accessToken
-                + "&expiresIn" + expiresIn + "&serverTime" + serverTime;
+        String redirectUrl = UriComponentsBuilder
+                .fromHttpUrl(frontendUrl)
+                .path("/oauth/callback")
+                .queryParam("accessToken", accessToken)
+                .queryParam("expiresIn", expiresIn)
+                .queryParam("serverTime", serverTime)
+                .build()
+                .toUriString();
+
         response.sendRedirect(redirectUrl);
     }
 }
