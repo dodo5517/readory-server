@@ -25,7 +25,7 @@
 
 ## 데모
 
-[데모 바로가기](https://readory.vercel.app/)
+[데모 바로가기](https://readory.kimdohyeon.dev/)
 > ℹ️ 데모 사이트 URL이 최근 변경되었습니다!!
 
 ---
