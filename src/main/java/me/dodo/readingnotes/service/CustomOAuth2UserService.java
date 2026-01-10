@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.util.ApiKeyGenerator;
@@ -18,19 +19,27 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static me.dodo.readingnotes.util.RequestUtils.getCurrentHttpRequest;
+
 @Service
 public class CustomOAuth2UserService implements
         OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
     private final UserRepository userRepository;
+    private final UserAuthLogService userAuthLogService;
     private static final Logger log = LoggerFactory.getLogger(CustomOAuth2UserService.class);
 
-    public CustomOAuth2UserService(UserRepository userRepository) {
+    public CustomOAuth2UserService(UserRepository userRepository,
+                                   UserAuthLogService userAuthLogService) {
         this.userRepository = userRepository;
+        this.userAuthLogService = userAuthLogService;
     }
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
+        // request 가져오기
+        HttpServletRequest httpRequest = getCurrentHttpRequest();
+
         // DefaultOAuth2UserService = 유저 정보 로딩하는 서비스
         OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate = new DefaultOAuth2UserService();
         // userRequest에 있는 액세스 토큰으로 사용자 정보를 요청하여 OAuth2User 형태로 받아옴. (attributes에 email,name 등이 담김)
@@ -68,6 +77,7 @@ public class CustomOAuth2UserService implements
             userNameAttribute = "id";
         }
         else {
+            userAuthLogService.logLoginFail(null, null, registrationId, "지원하지 않는 소셜 로그인입니다.", httpRequest);
             throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다: " + registrationId);
         }
 
@@ -105,6 +115,9 @@ public class CustomOAuth2UserService implements
                         User.fromSocial(email, name, registrationId, providerId, api_key)
                 ));
         log.debug("user: {}", user);
+
+        // 소셜 로그인 로그 저장
+        userAuthLogService.logLoginSuccess(user, email, registrationId, httpRequest);
 
         // 객체로 만들어 전달
         return new DefaultOAuth2User(
