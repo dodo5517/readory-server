@@ -128,3 +128,31 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_source_external
 
 CREATE INDEX IF NOT EXISTS idx_bsl_isbn13
     ON book_source_link(isbn13);
+-- ─────────────────────────────────────────────────────────────────────────────
+-- USER_AUTH_LOGS
+-- - INDEX (user_id)
+-- - INDEX (occurred_at)
+-- - INDEX (event_type)
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS user_auth_logs (
+                                              id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                                              user_id      INTEGER,
+                                              event_type   TEXT NOT NULL, -- LOGIN, LOGOUT, LOGIN_FAIL
+                                              result       TEXT NOT NULL, -- SUCCESS, FAIL
+                                              fail_reason  TEXT, -- length=50
+                                              ip_address   TEXT NOT NULL, -- length=45
+                                              user_agent   TEXT, -- length=255
+                                              identifier   TEXT, -- length=255
+                                              provider   TEXT, -- length=20 ex) LOCAL, GOOGLE, KAKAO, NAVER
+                                              created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY(user_id) REFERENCES users(id)
+    );
+
+CREATE INDEX IF NOT EXISTS idx_auth_logs_user_id
+    ON user_auth_logs(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_auth_logs_created_at
+    ON user_auth_logs(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_auth_logs_event_type
+    ON user_auth_logs(event_type);
