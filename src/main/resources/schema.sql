@@ -137,7 +137,7 @@ CREATE INDEX IF NOT EXISTS idx_bsl_isbn13
 CREATE TABLE IF NOT EXISTS user_auth_logs (
                                               id           INTEGER PRIMARY KEY AUTOINCREMENT,
                                               user_id      INTEGER,
-                                              event_type   TEXT NOT NULL, -- LOGIN, LOGOUT, LOGIN_FAIL
+                                              event_type   TEXT NOT NULL, -- LOGIN, LOGIN_FAIL, LOGOUT_CURRENT_DEVICE, LOGOUT_ALL_DEVICES
                                               result       TEXT NOT NULL, -- SUCCESS, FAIL
                                               fail_reason  TEXT, -- length=50
                                               ip_address   TEXT NOT NULL, -- length=45
