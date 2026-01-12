@@ -26,8 +26,10 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 //    runtimeOnly 'com.h2database:h2'
 
-    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'              // SQLite JDBC
+//    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'              // SQLite JDBC
     implementation 'org.hibernate.orm:hibernate-community-dialects:6.5.2.Final' // SQLite Dialect
+
+    runtimeOnly 'org.postgresql:postgresql' // postgreSQL
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
