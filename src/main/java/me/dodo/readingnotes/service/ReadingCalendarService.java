@@ -36,7 +36,7 @@ public class ReadingCalendarService {
 
         // time도 붙임
         LocalDateTime start = startDate.atStartOfDay();
-        LocalDateTime end   = endDate.atStartOfDay();
+        LocalDateTime end   = endDate.plusDays(1).atStartOfDay();
 
         List<DayCountRow> rows = repo.countByDayInRange(userId, start, end);
 
