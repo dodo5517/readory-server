@@ -159,16 +159,28 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     Page<BookWithLastRecordResponse> findConfirmedBooksByTitle(Long userId, String q, Pageable pageable);
 
     // Day 목록
+    // sqlite
+//    @Query("""
+//        select
+//           function('strftime', '%Y-%m-%d', r.recordedAt) as day,
+//           count(r) as cnt
+//        from ReadingRecord r
+//        where r.user.id = :userId
+//          and r.recordedAt >= :start and r.recordedAt < :end
+//        group by function('strftime', '%Y-%m-%d', r.recordedAt)
+//        order by function('strftime', '%Y-%m-%d', r.recordedAt) asc
+//        """)
+    // postgreSQL
     @Query("""
         select
-           function('strftime', '%Y-%m-%d', r.recordedAt) as day,
+           function('date', r.recordedAt) as day,
            count(r) as cnt
         from ReadingRecord r
         where r.user.id = :userId
           and r.recordedAt >= :start and r.recordedAt < :end
-        group by function('strftime', '%Y-%m-%d', r.recordedAt)
-        order by function('strftime', '%Y-%m-%d', r.recordedAt) asc
-        """)
+        group by function('date', r.recordedAt)
+        order by function('date', r.recordedAt) asc
+    """)
     List<DayCountRow> countByDayInRange(@Param("userId") Long userId,
                                         @Param("start") LocalDateTime start,
                                         @Param("end") LocalDateTime end);
