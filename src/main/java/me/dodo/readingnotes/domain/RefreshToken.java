@@ -34,6 +34,11 @@ public class RefreshToken {
     // 생성자
     public RefreshToken() {}
 
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
+
     public RefreshToken(User user, String token, String deviceInfo, LocalDateTime expiryDate) {
         this.user = user;
         this.token = token;
