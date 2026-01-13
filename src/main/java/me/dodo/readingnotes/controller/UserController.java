@@ -8,7 +8,6 @@ import me.dodo.readingnotes.dto.user.UpdatePasswordRequest;
 import me.dodo.readingnotes.dto.user.UpdateUsernameRequest;
 import me.dodo.readingnotes.dto.user.UserRequest;
 import me.dodo.readingnotes.dto.user.UserResponse;
-import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.service.S3Service;
 import me.dodo.readingnotes.service.UserService;
 import me.dodo.readingnotes.domain.User;
@@ -19,8 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -62,26 +59,37 @@ public class UserController {
     }
 
     // 유저 프로필 사진
-    @PostMapping("/{id}/profile-image")
-    public ResponseEntity<String> uploadProfileImage(@PathVariable Long id,
-                                                     @RequestParam("image") MultipartFile image) throws Exception {
+    @PostMapping("/me/profile-image")
+    public ResponseEntity<String> uploadProfileImage(@RequestParam("image") MultipartFile image,
+                                                     HttpServletRequest httpRequest) throws Exception {
+        // 토큰에서 userId 추출
+        String accessToken = jwtTokenProvider.extractToken(httpRequest);
+        jwtTokenProvider.assertValid(accessToken);
+        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+
         // 기존 이미지 삭제
-        userService.deleteProfileImage(id);
+        userService.deleteProfileImage(userId);
 
         // 새 이미지 업로드
-        String fileName = "user-" + id + "_" + UUID.randomUUID();
+        String fileName = "user-" + userId + "_" + UUID.randomUUID();
         String imageUrl = s3Service.uploadProfileImage(image, fileName);
 
-        userService.updateProfileImage(id, imageUrl); // DB에 URL 저장
+        userService.updateProfileImage(userId, imageUrl); // DB에 URL 저장
 
         return ResponseEntity.ok(imageUrl);
     }
 
     // 유저 프로필 사진 삭제
-    @DeleteMapping("/{id}/profile-image")
-    public ResponseEntity<Void> deleteProfileImage(@PathVariable Long id) {
-        userService.deleteProfileImage(id);
-        userService.updateProfileImage(id, null); // DB에서 URL 제거
+    @DeleteMapping("/me/profile-image")
+    public ResponseEntity<Void> deleteProfileImage(HttpServletRequest httpRequest) {
+
+        // 토큰에서 userId 추출
+        String accessToken = jwtTokenProvider.extractToken(httpRequest);
+        jwtTokenProvider.assertValid(accessToken);
+        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+
+        userService.deleteProfileImage(userId);
+        userService.updateProfileImage(userId, null); // DB에서 URL 제거
         return ResponseEntity.noContent().build();
     }
     
