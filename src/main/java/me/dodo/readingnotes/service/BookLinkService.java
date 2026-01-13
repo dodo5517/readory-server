@@ -143,4 +143,16 @@ public class BookLinkService {
         } catch (Exception ignore) { }
         return null;
     }
+
+    // 본인 기록에 대한 요청인지 확인
+    public void assertSelf(Long targetRecordId, Long tokenUserId) {
+        ReadingRecord rec = recordRepo.findById(targetRecordId)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
+        if (tokenUserId == null || targetRecordId == null) {
+            throw new IllegalArgumentException("ID가 없습니다.");
+        }
+        if (!tokenUserId.equals(rec.getUser().getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("본인의 기록만 요청 할 수 있습니다.");
+        }
+    }
 }
