@@ -137,13 +137,6 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // 특정 유저 조희
-    @GetMapping("/{id}")
-    public UserResponse getUser(@PathVariable Long id){
-        User user = userService.findUserById(id);
-        return new UserResponse(user);
-    }
-
     // api_key 재발급
     @PostMapping("/api-key/reissue")
     public ResponseEntity<MaskedApiKeyResponse> reissueApiKey(HttpServletRequest request) {
@@ -169,17 +162,6 @@ public class UserController {
         String apiKey = userService.getRawApiKey(userId);
         return ResponseEntity.ok(new ApiKeyResponse("API Key 조회 성공", apiKey));
     }
-    
-    // 모든 유저 조희 (관리자만 볼 실행할 수 있도록 수정해야 함.)
-//    @GetMapping("/all")
-//    public List<UserResponse> getAllUsers(){
-//        List<User> users = userService.findAllUsers();
-//        List<UserResponse> userResponses = new ArrayList<>();
-//        for (User user : users) {
-//            userResponses.add(new UserResponse(user));
-//        }
-//        return userResponses;
-//    }
 
     // 유저 탈퇴
     @DeleteMapping("/delete")
