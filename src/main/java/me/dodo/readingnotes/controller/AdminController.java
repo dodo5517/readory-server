@@ -3,8 +3,10 @@ package me.dodo.readingnotes.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import me.dodo.readingnotes.domain.User;
+import me.dodo.readingnotes.domain.UserAuthLog;
 import me.dodo.readingnotes.dto.auth.ApiKeyResponse;
 import me.dodo.readingnotes.dto.common.MaskedApiKeyResponse;
+import me.dodo.readingnotes.dto.log.LogDetailResponse;
 import me.dodo.readingnotes.dto.log.LogListResponse;
 import me.dodo.readingnotes.dto.user.*;
 import me.dodo.readingnotes.dto.admin.AdminPageUserResponse;
@@ -272,4 +274,44 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
+    // ##############################
+    // 유저 인증 로그
+    // ##############################
+
+    // 전체 로그 조회
+    @GetMapping("/auth/logs")
+    public Page<LogListResponse> getLogs(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) UserAuthLog.AuthEventType type,
+            @RequestParam(required = false) UserAuthLog.AuthResult result,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            HttpServletRequest request
+    ) {
+        // 토큰에서 adminId 추출
+        String accessToken = jwtTokenProvider.extractToken(request);
+        jwtTokenProvider.assertValid(accessToken);
+        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 전체 로그 조회
+        return logService.findLogs(keyword, type, result, pageable);
+    }
+
+    // 특정 로그 조회
+    @GetMapping("/auth/logs/{id}")
+    public LogDetailResponse getLogDetail(@PathVariable Long id,
+                                          HttpServletRequest request){
+        // 토큰에서 adminId 추출
+        String accessToken = jwtTokenProvider.extractToken(request);
+        jwtTokenProvider.assertValid(accessToken);
+        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 특정 로그 조회
+        return logService.findLog(id);
+    }
 }
