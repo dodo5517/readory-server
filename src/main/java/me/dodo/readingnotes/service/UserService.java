@@ -17,8 +17,6 @@ import me.dodo.readingnotes.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public class UserService {
 
@@ -205,7 +203,7 @@ public class UserService {
     public void assertAdmin(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 ID의 유저가 없습니다."));
-        if (user.getRole() != "ADMIN") {
+        if (!"ADMIN".equals(user.getRole())) {
             throw new IllegalArgumentException("관리자 권한이 없습니다.");
         }
     }
