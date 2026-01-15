@@ -58,7 +58,7 @@ public class UserController {
         return new UserResponse(user);
     }
 
-    // 유저 프로필 사진
+    // 유저 프로필 사진 업로드
     @PostMapping("/me/profile-image")
     public ResponseEntity<String> uploadProfileImage(@RequestParam("image") MultipartFile image,
                                                      HttpServletRequest httpRequest) throws Exception {
