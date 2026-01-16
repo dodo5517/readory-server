@@ -57,10 +57,11 @@ public class AdminController {
                                                    @RequestParam(required = false) String role,
                                                    @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
                                                    HttpServletRequest request) {
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -73,10 +74,11 @@ public class AdminController {
     @GetMapping("/users/{id}")
     public AdminPageUserResponse getUser(@PathVariable Long id,
                                          HttpServletRequest request){
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -89,11 +91,12 @@ public class AdminController {
     @PatchMapping("/users/{id}/username")
     public ResponseEntity<Void> updateUsername(@PathVariable Long id,
                                                @RequestBody @Valid UpdateUsernameRequest request,
-                                               HttpServletRequest httpRequest){
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(httpRequest);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+                                               HttpServletRequest servletRequest){
+        // adminId 추출
+        Long adminId = (Long) servletRequest.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -109,11 +112,12 @@ public class AdminController {
     @PatchMapping("/users/{id}/password")
     public ResponseEntity<Void> updatePassword(@PathVariable Long id,
                                                @RequestBody @Valid UpdatePasswordAdminRequest request,
-                                               HttpServletRequest httpRequest){
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(httpRequest);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+                                               HttpServletRequest servletRequest){
+        // adminId 추출
+        Long adminId = (Long) servletRequest.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -129,11 +133,12 @@ public class AdminController {
     @PostMapping("/users/{id}/profile-image")
     public ResponseEntity<String> uploadProfileImage(@PathVariable Long id,
                                                      @RequestParam("image") MultipartFile image,
-                                                     HttpServletRequest httpRequest) throws Exception {
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(httpRequest);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+                                                     HttpServletRequest request) throws Exception {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -153,12 +158,12 @@ public class AdminController {
     // 특정 유저 프로필 사진 삭제
     @DeleteMapping("/users/{id}/profile-image")
     public ResponseEntity<Void> deleteProfileImage(@PathVariable Long id,
-                                                   HttpServletRequest httpRequest) {
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(httpRequest);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
-
+                                                   HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
 
@@ -172,10 +177,11 @@ public class AdminController {
     @PostMapping("/users/{id}/api-key/reissue")
     public ResponseEntity<MaskedApiKeyResponse> reissueApiKey(@PathVariable Long id,
                                                               HttpServletRequest request) {
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -188,10 +194,11 @@ public class AdminController {
     @GetMapping("/users/{id}/api-key")
     public ResponseEntity<ApiKeyResponse> getApiKey(@PathVariable Long id,
                                                     HttpServletRequest request) {
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -204,10 +211,11 @@ public class AdminController {
     @DeleteMapping("/users/{id}/delete")
     public Boolean deleteUser(@PathVariable Long id,
                               HttpServletRequest request){
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -220,10 +228,11 @@ public class AdminController {
     public ResponseEntity<Void> changeUserStatus(@PathVariable Long id,
                                                  @RequestBody ChangeUserStatusRequest request,
                                                  HttpServletRequest servletRequest){
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(servletRequest);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // adminId 추출
+        Long adminId = (Long) servletRequest.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -239,12 +248,12 @@ public class AdminController {
     @PostMapping("/users/{id}/role")
     public ResponseEntity<Void> changeUserRole(@PathVariable Long id,
                                                @RequestBody String role,
-                                               HttpServletRequest servletRequest){
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(servletRequest);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
-
+                                               HttpServletRequest request){
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
 
@@ -258,11 +267,12 @@ public class AdminController {
     // 특정 유저 기기 전체 로그아웃
     @PostMapping("/users/{id}/logout")
     public ResponseEntity<Void> logoutUser(@PathVariable Long id,
-                                           HttpServletRequest servletRequest){
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(servletRequest);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+                                           HttpServletRequest request){
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -287,10 +297,11 @@ public class AdminController {
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             HttpServletRequest request
     ) {
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -303,11 +314,11 @@ public class AdminController {
     @GetMapping("/auth/logs/{id}")
     public AuthLogDetailResponse getLogDetail(@PathVariable Long id,
                                               HttpServletRequest request){
-        // 토큰에서 adminId 추출
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long adminId = jwtTokenProvider.getUserIdFromToken(accessToken);
-
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
 

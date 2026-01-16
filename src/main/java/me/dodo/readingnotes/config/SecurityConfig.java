@@ -17,11 +17,14 @@ public class SecurityConfig {
 
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final UserRepository userRepository;
+    private final JwtAuthFilter jwtAuthFilter;
 
     public SecurityConfig(OAuth2SuccessHandler oAuth2SuccessHandler,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          JwtAuthFilter jwtAuthFilter) {
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
         this.userRepository = userRepository;
+        this.jwtAuthFilter = jwtAuthFilter;
     }
 
     @Bean
@@ -45,7 +48,8 @@ public class SecurityConfig {
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2SuccessHandler)
-                );
+                )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         // API Key 필터, /records 로 시작하는 경로에만 적용함.
         ApiKeyFilter apiKeyFilter = new ApiKeyFilter(

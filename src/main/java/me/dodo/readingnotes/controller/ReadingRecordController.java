@@ -15,8 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -57,14 +59,11 @@ public class ReadingRecordController {
             HttpServletRequest request,
             @RequestParam(value = "size", defaultValue = "3") int size
     ){
-        log.info("getMySummaryRecords");
-
-        // 헤더에서 Authorization 추출
-        String AccessToken = jwtTokenProvider.extractToken(request);
-        // access 토큰 유효한지 확인.
-        jwtTokenProvider.assertValid(AccessToken);
-        // 토큰에서 userId 추출
-        Long userId = jwtTokenProvider.getUserIdFromToken(AccessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         List<ReadingRecord> list = service.getLatestRecords(userId, size);
         log.debug("list: {}", list.toString());
@@ -80,9 +79,11 @@ public class ReadingRecordController {
             @RequestParam(value = "scope", defaultValue = "titleAndAuthor") String scope,
             @RequestParam(value = "q", required = false) String q
     ) {
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         Page<ReadingRecord> page = service.getMyRecords(userId, scope, q, pageable);
         return page.map(ReadingRecordResponse::new);
@@ -97,9 +98,11 @@ public class ReadingRecordController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "sort", defaultValue = "recent") String sort
     ) {
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         Pageable pageable = PageRequest.of(page, size);
 
@@ -114,9 +117,11 @@ public class ReadingRecordController {
             @RequestParam(defaultValue = "20") int size,
             HttpServletRequest request
     ) {
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         return service.getBookRecordsByCursor(userId, bookId, cursor, size);
     }
@@ -126,9 +131,11 @@ public class ReadingRecordController {
     public CalendarResponse getCalendar(@RequestParam(value = "year") int year,
                                         @RequestParam(value = "month") int month,
                                         HttpServletRequest request) {
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         return calendarService.getMonthly(userId, year, month);
     }
@@ -142,9 +149,11 @@ public class ReadingRecordController {
                                                   @RequestParam(value = "size", defaultValue = "10") int size, // 기본 10개
                                                   @RequestParam(value = "sort", defaultValue = "desc") String sort, // 기본 내림차순
                                                   HttpServletRequest request) {
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         // 날짜 오름/내림으로만 정렬 가능함.
         Sort order = "asc".equalsIgnoreCase(sort)
@@ -163,9 +172,12 @@ public class ReadingRecordController {
                                                   @RequestParam(value = "size", defaultValue = "10") int size, // 기본 10개
                                                   @RequestParam(value = "sort", defaultValue = "desc") String sort, // 기본 내림차순
                                                   HttpServletRequest request) {
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
+
 
         // 날짜 오름/내림으로만 정렬 가능함.
         Sort order = "asc".equalsIgnoreCase(sort)
@@ -183,9 +195,11 @@ public class ReadingRecordController {
             @PathVariable("recordId") Long recordId,
             @RequestBody ReadingRecordRequest req,
             HttpServletRequest request){
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         return service.update(recordId, userId, req);
     }
@@ -195,9 +209,11 @@ public class ReadingRecordController {
     public void deleteRecord(
             @PathVariable Long recordId,
             HttpServletRequest request){
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         service.deleteRecordById(recordId, userId);
     }

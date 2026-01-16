@@ -56,7 +56,7 @@ public class JwtTokenProvider {
                 .signWith(key)
                 .compact();
     }
-    
+
     // 클라이언트에서 보낸 토큰에서 userId 추출
     public Long getUserIdFromToken(String token) {
         return Jwts.parserBuilder()
@@ -90,10 +90,18 @@ public class JwtTokenProvider {
     // Authorization 헤더에서 꺼내기
     public static String extractToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Authorization header가 없거나 Bearer 타입이 아닙니다.");
         }
-        throw new IllegalArgumentException("유효하지 않은 Authorization header 입니다.");
+
+        String token = authHeader.substring(7).trim();
+
+        if (token.isBlank() || token.equalsIgnoreCase("null")) {
+            throw new IllegalArgumentException("Bearer 토큰이 비어있거나 null 입니다.");
+        }
+
+        return token;
     }
 
     // 토큰 만료 시간(Date) 확인
@@ -112,5 +120,15 @@ public class JwtTokenProvider {
         long now = System.currentTimeMillis();
         long remain = exp.getTime() - now;
         return Math.max(0, remain / 1000); // 초 단위
+    }
+
+    // Role 추출
+    public String getRoleFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
     }
 }
