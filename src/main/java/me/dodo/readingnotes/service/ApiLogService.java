@@ -21,7 +21,7 @@ public class ApiLogService {
         this.userRepository = userRepository;
     }
 
-
+    // API 로그 저장
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void save(ApiLogCommand cmd) {
         try {
@@ -53,6 +53,7 @@ public class ApiLogService {
         }
     }
 
+    // 유저 정보 있는지 확인
     private User resolveUserOrNull(Long userId) {
         if (userId == null) return null;
 
