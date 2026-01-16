@@ -80,13 +80,15 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                                             @Param("q") String q,
                                             Pageable pageable);
 
-    // 해당 유저의 특정 책 찾기
+    // 해당 유저의 특정 책 찾기 (postgreSql은 밑처럼 하면 문제 생겨서 cursor 유무로 분기함.)
+    // sqlite
     @Query("""
         select r
           from ReadingRecord r
          where r.user.id = :userId
            and r.book.id = :bookId
-           and ( :cursorAt is null
+           and ( 
+                :cursorAt is null
                  or r.recordedAt < :cursorAt
                  or (r.recordedAt = :cursorAt and r.id < :cursorId) )
          order by r.recordedAt desc, r.id desc
@@ -98,6 +100,34 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
             @Param("cursorId") Long cursorId,
             Pageable pageable
     );
+    // postgreSQL
+    @Query("""
+        select r from ReadingRecord r
+        where r.user.id = :userId
+          and r.book.id = :bookId
+        order by r.recordedAt desc, r.id desc
+        """)
+    List<ReadingRecord> findSliceFirstPage(
+            @Param("userId") Long userId,
+            @Param("bookId") Long bookId,
+            Pageable pageable
+    );
+    @Query("""
+        select r from ReadingRecord r
+        where r.user.id = :userId
+          and r.book.id = :bookId
+          and (r.recordedAt < :cursorAt or (r.recordedAt = :cursorAt and r.id < :cursorId))
+        order by r.recordedAt desc, r.id desc
+        """)
+    List<ReadingRecord> findSliceNextPage(
+            @Param("userId") Long userId,
+            @Param("bookId") Long bookId,
+            @Param("cursorAt") LocalDateTime cursorAt,
+            @Param("cursorId") Long cursorId,
+            Pageable pageable
+    );
+
+
     // 기간 계산(해당 유저의 해당 책 기록 중 가장 과거/가장 최근)
     @Query("""
         select min(r.recordedAt)

@@ -174,9 +174,23 @@ public class ReadingRecordService {
         // 기록 시간 내림차순 → id 내림차순.
         Sort sort = Sort.by("recordedAt").descending().and(Sort.by("id").descending());
         // 커서가 있다면 커서보다 더 작은(과거) 레코드만 가져옴.
-        List<ReadingRecord> fetched = readingRecordRepository.findSliceByUserAndBookWithCursor(
-                userId, bookId, c.cursorAt, c.cursorId, PageRequest.of(0, pageSize + 1, sort)
-        );
+        // sqlite
+//        List<ReadingRecord> fetched = readingRecordRepository.findSliceByUserAndBookWithCursor(
+//                userId, bookId, c.cursorAt, c.cursorId, PageRequest.of(0, pageSize + 1, sort)
+//        );
+        // postgreSql
+        List<ReadingRecord> fetched;
+        if (c == null || c.cursorAt == null || c.cursorId == null) {
+            // 첫 페이지
+            fetched = readingRecordRepository.findSliceFirstPage(
+                    userId, bookId, PageRequest.of(0, pageSize + 1, sort)
+            );
+        } else {
+            // 다음 페이지
+            fetched = readingRecordRepository.findSliceNextPage(
+                    userId, bookId, c.cursorAt, c.cursorId, PageRequest.of(0, pageSize + 1, sort)
+            );
+        }
 
         // 기록이 더 남았는지 확인(남았으면=true, 안 남았으면=false)
         boolean hasMore = fetched.size() > pageSize;
