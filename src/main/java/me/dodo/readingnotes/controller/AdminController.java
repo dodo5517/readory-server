@@ -6,8 +6,8 @@ import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.domain.UserAuthLog;
 import me.dodo.readingnotes.dto.auth.ApiKeyResponse;
 import me.dodo.readingnotes.dto.common.MaskedApiKeyResponse;
-import me.dodo.readingnotes.dto.log.LogDetailResponse;
-import me.dodo.readingnotes.dto.log.LogListResponse;
+import me.dodo.readingnotes.dto.log.AuthLogDetailResponse;
+import me.dodo.readingnotes.dto.log.AuthLogListResponse;
 import me.dodo.readingnotes.dto.user.*;
 import me.dodo.readingnotes.dto.admin.AdminPageUserResponse;
 import me.dodo.readingnotes.service.AuthService;
@@ -280,7 +280,7 @@ public class AdminController {
 
     // 전체 로그 조회
     @GetMapping("/auth/logs")
-    public Page<LogListResponse> getLogs(
+    public Page<AuthLogListResponse> getLogs(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UserAuthLog.AuthEventType type,
             @RequestParam(required = false) UserAuthLog.AuthResult result,
@@ -296,13 +296,13 @@ public class AdminController {
         userService.assertAdmin(adminId);
 
         // 전체 로그 조회
-        return logService.findLogs(keyword, type, result, pageable);
+        return logService.findAuthLogs(keyword, type, result, pageable);
     }
 
     // 특정 로그 조회
     @GetMapping("/auth/logs/{id}")
-    public LogDetailResponse getLogDetail(@PathVariable Long id,
-                                          HttpServletRequest request){
+    public AuthLogDetailResponse getLogDetail(@PathVariable Long id,
+                                              HttpServletRequest request){
         // 토큰에서 adminId 추출
         String accessToken = jwtTokenProvider.extractToken(request);
         jwtTokenProvider.assertValid(accessToken);
@@ -312,6 +312,6 @@ public class AdminController {
         userService.assertAdmin(adminId);
 
         // 특정 로그 조회
-        return logService.findLog(id);
+        return logService.findAuthLog(id);
     }
 }

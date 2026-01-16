@@ -3,7 +3,7 @@ package me.dodo.readingnotes.service;
 import jakarta.servlet.http.HttpServletRequest;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.domain.UserAuthLog;
-import me.dodo.readingnotes.repository.UserAuthLogRepository;
+import me.dodo.readingnotes.repository.AuthLogRepository;
 import me.dodo.readingnotes.util.RequestInfoExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,13 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserAuthLogService {
-    private final UserAuthLogRepository userAuthLogRepository;
+    private final AuthLogRepository authLogRepository;
     private final RequestInfoExtractor requestInfoExtractor;
     private static final Logger log = LoggerFactory.getLogger(UserAuthLogService.class);
 
-    public UserAuthLogService(UserAuthLogRepository userAuthLogRepository,
+    public UserAuthLogService(AuthLogRepository authLogRepository,
                               RequestInfoExtractor requestInfoExtractor) {
-        this.userAuthLogRepository = userAuthLogRepository;
+        this.authLogRepository = authLogRepository;
         this.requestInfoExtractor = requestInfoExtractor;
     }
 
@@ -64,15 +64,14 @@ public class UserAuthLogService {
                 log.setUserAgent(requestInfoExtractor.extractUserAgent(request));
             }
 
-            userAuthLogRepository.save(log);
+            authLogRepository.save(log);
         } catch (Exception e) {
             // 인증 흐름 보호
             log.warn("Failed to log login failure", e);
         }
     }
 
-
-
+    // 저장
     private void saveSafely(User user,
                             String identifier,
                             String provider,
@@ -95,7 +94,7 @@ public class UserAuthLogService {
                 log.setUserAgent(requestInfoExtractor.extractUserAgent(request));
             }
 
-            userAuthLogRepository.save(log);
+            authLogRepository.save(log);
         } catch (Exception e) {
             log.warn("Failed to save user auth log", e);
         }

@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface LogRepository extends JpaRepository<UserAuthLog, Long> {
+public interface AuthLogRepository extends JpaRepository<UserAuthLog, Long> {
     @Query("""
         select l
         from UserAuthLog l
