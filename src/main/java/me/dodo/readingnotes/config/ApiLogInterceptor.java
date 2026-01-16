@@ -5,12 +5,22 @@ import jakarta.servlet.http.HttpServletResponse;
 import me.dodo.readingnotes.domain.ApiLog;
 import me.dodo.readingnotes.dto.log.ApiLogCommand;
 import me.dodo.readingnotes.service.ApiLogService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 public class ApiLogInterceptor implements HandlerInterceptor {
     private static final String ATTR_START_TIME = "API_LOG_START_TIME";
+
+    // 운영 정책
+    @Value("${api.log.slow-threshold-ms}")
+    private int slowThresholdMs;
+
+    @Value("${api.log.success-sample-rate}")
+    private int successSampleRate;
 
     private final ApiLogService apiLogService;
     private final ApiLogRequestInfoExtractor extractor;
@@ -37,7 +47,16 @@ public class ApiLogInterceptor implements HandlerInterceptor {
                                 HttpServletResponse response,
                                 Object handler,
                                 Exception ex) {
-//        System.out.println("[API_LOG] afterCompletion: " + request.getMethod() + " " + request.getRequestURI());
+        // 저장 제외(노이즈 제거)
+        if (shouldSkip(request)) {
+            return;
+        }
+
+        Object startAttr = request.getAttribute(ATTR_START_TIME);
+        if (!(startAttr instanceof Long)) {
+            startAttr = System.currentTimeMillis();
+        }
+
         long start = (long) request.getAttribute(ATTR_START_TIME);
         int executionTimeMs = (int) (System.currentTimeMillis() - start);
 
@@ -46,6 +65,11 @@ public class ApiLogInterceptor implements HandlerInterceptor {
                 (ex == null && statusCode < 400)
                         ? ApiLog.Result.SUCCESS
                         : ApiLog.Result.FAIL;
+
+        // 저장량 제어 핵심 정책
+        if (!shouldStore(result, statusCode, executionTimeMs, ex)) {
+            return;
+        }
 
         ApiLogCommand command = new ApiLogCommand(
                 extractor.extractUserIdOrNull(request),
@@ -63,5 +87,41 @@ public class ApiLogInterceptor implements HandlerInterceptor {
         );
 
         apiLogService.save(command);
+    }
+    private boolean shouldSkip(HttpServletRequest request) {
+        String method = request.getMethod();
+        String path = request.getRequestURI();
+
+        // CORS preflight
+        if ("OPTIONS".equalsIgnoreCase(method)) return true;
+
+        // 운영/문서/노이즈 경로
+        if (path == null) return false;
+        return path.equals("/error")
+                || path.startsWith("/actuator")
+                || path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/favicon.ico")
+                || path.startsWith("/css")
+                || path.startsWith("/js")
+                || path.startsWith("/images");
+    }
+
+    // FAIL 100% 저장, 느린 요청은 성공이어도 100% 저장, 그 외 성공 요청은 샘플링 저장
+    private boolean shouldStore(ApiLog.Result result, int statusCode, int executionTimeMs, Exception ex) {
+
+        // 실패(예외/4xx/5xx)는 무조건 저장
+        if (result == ApiLog.Result.FAIL) return true;
+
+        // 느린 요청은 성공이어도 무조건 저장
+        if (executionTimeMs >= slowThresholdMs) return true;
+
+        // 그 외 성공 요청은 샘플링
+        return sampleSuccess();
+    }
+
+    private boolean sampleSuccess() {
+        int r = ThreadLocalRandom.current().nextInt(100) + 1; // 1..100
+        return r <= successSampleRate;
     }
 }
