@@ -26,11 +26,11 @@ public class CustomOAuth2UserService implements
         OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
     private final UserRepository userRepository;
-    private final UserAuthLogService userAuthLogService;
+    private final AuthLogService userAuthLogService;
     private static final Logger log = LoggerFactory.getLogger(CustomOAuth2UserService.class);
 
     public CustomOAuth2UserService(UserRepository userRepository,
-                                   UserAuthLogService userAuthLogService) {
+                                   AuthLogService userAuthLogService) {
         this.userRepository = userRepository;
         this.userAuthLogService = userAuthLogService;
     }

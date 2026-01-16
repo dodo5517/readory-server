@@ -27,7 +27,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final UserAuthLogService userAuthLogService;
+    private final AuthLogService userAuthLogService;
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
@@ -36,7 +36,7 @@ public class AuthService {
                        RefreshTokenRepository refreshTokenRepository,
                        UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       UserAuthLogService userAuthLogService) {
+                       AuthLogService userAuthLogService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;

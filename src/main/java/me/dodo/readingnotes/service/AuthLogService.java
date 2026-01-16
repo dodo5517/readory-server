@@ -12,13 +12,13 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class UserAuthLogService {
+public class AuthLogService {
     private final AuthLogRepository authLogRepository;
     private final RequestInfoExtractor requestInfoExtractor;
-    private static final Logger log = LoggerFactory.getLogger(UserAuthLogService.class);
+    private static final Logger log = LoggerFactory.getLogger(AuthLogService.class);
 
-    public UserAuthLogService(AuthLogRepository authLogRepository,
-                              RequestInfoExtractor requestInfoExtractor) {
+    public AuthLogService(AuthLogRepository authLogRepository,
+                          RequestInfoExtractor requestInfoExtractor) {
         this.authLogRepository = authLogRepository;
         this.requestInfoExtractor = requestInfoExtractor;
     }
