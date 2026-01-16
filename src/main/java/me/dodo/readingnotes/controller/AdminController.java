@@ -2,19 +2,18 @@ package me.dodo.readingnotes.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import me.dodo.readingnotes.domain.ApiLog;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.domain.UserAuthLog;
 import me.dodo.readingnotes.dto.auth.ApiKeyResponse;
 import me.dodo.readingnotes.dto.common.MaskedApiKeyResponse;
+import me.dodo.readingnotes.dto.log.ApiLogDetailResponse;
+import me.dodo.readingnotes.dto.log.ApiLogListResponse;
 import me.dodo.readingnotes.dto.log.AuthLogDetailResponse;
 import me.dodo.readingnotes.dto.log.AuthLogListResponse;
 import me.dodo.readingnotes.dto.user.*;
 import me.dodo.readingnotes.dto.admin.AdminPageUserResponse;
-import me.dodo.readingnotes.service.AuthService;
-import me.dodo.readingnotes.service.LogService;
-import me.dodo.readingnotes.service.S3Service;
-import me.dodo.readingnotes.service.UserService;
-import me.dodo.readingnotes.util.JwtTokenProvider;
+import me.dodo.readingnotes.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -30,16 +29,14 @@ import java.util.UUID;
 public class AdminController {
 
     private final AuthService authService;
-    private JwtTokenProvider jwtTokenProvider;
     private UserService userService;
     private S3Service s3Service;
     private LogService logService;
 
-    public AdminController(JwtTokenProvider jwtTokenProvider,
-                           UserService userService,
+    public AdminController(UserService userService,
                            S3Service s3Service, AuthService authService,
-                           LogService logService) {
-        this.jwtTokenProvider = jwtTokenProvider;
+                           LogService logService,
+                           ApiLogService apiLogService) {
         this.userService = userService;
         this.s3Service = s3Service;
         this.authService = authService;
@@ -290,7 +287,7 @@ public class AdminController {
 
     // 전체 로그 조회
     @GetMapping("/auth/logs")
-    public Page<AuthLogListResponse> getLogs(
+    public Page<AuthLogListResponse> getAuthLogs(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UserAuthLog.AuthEventType type,
             @RequestParam(required = false) UserAuthLog.AuthResult result,
@@ -324,5 +321,43 @@ public class AdminController {
 
         // 특정 로그 조회
         return logService.findAuthLog(id);
+    }
+
+    // ##############################
+    // API 로그
+    // ##############################
+
+    // 전체 API 로그 조회
+    @GetMapping("/api/logs")
+    public Page<ApiLogListResponse> getApiLogs(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) ApiLog.Result result,
+            @RequestParam(required = false) Integer statusCode,
+            @RequestParam(required = false) String method,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            HttpServletRequest request
+    ) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) throw new IllegalArgumentException("userId가 없습니다.");
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        return logService.findApiLogs(keyword, result, statusCode, method, pageable);
+    }
+
+    // 특정 API 로그 조회
+    @GetMapping("/api/logs/{id}")
+    public ApiLogDetailResponse getApiLogDetail(@PathVariable Long id,
+                                                HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) throw new IllegalArgumentException("userId가 없습니다.");
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        return logService.findApiLog(id);
     }
 }
