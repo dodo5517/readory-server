@@ -273,3 +273,48 @@ CREATE INDEX IF NOT EXISTS idx_user_auth_logs_identifier
 -- IP 기준 보안 분석
 CREATE INDEX IF NOT EXISTS idx_user_auth_logs_ip
     ON user_auth_logs (ip_address);
+
+-- =========================
+-- Table: api_logs
+-- =========================
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'api_log_result') THEN
+     CREATE TYPE api_log_result AS ENUM ('SUCCESS', 'FAIL');
+END IF;
+END$$;
+
+CREATE TABLE IF NOT EXISTS api_logs (
+    id              BIGSERIAL PRIMARY KEY,
+
+    user_id         BIGINT NULL,              -- 실패 시 null 가능
+    user_role       VARCHAR(255) NULL,
+
+    method          VARCHAR(100) NULL,
+    path            VARCHAR(255) NULL,
+    query_string    VARCHAR(255) NULL,
+
+    status_code     INTEGER NOT NULL,          -- @Column(length=20)은 DDL에 영향 없음(숫자)
+    result          api_log_result NOT NULL,   -- 또는 아래 "CHECK 제약" 방식으로 대체 가능
+
+    ip_address      VARCHAR(45) NULL,
+    user_agent      VARCHAR(255) NULL,
+    executionTimeMs INT(255) NOT NULL,
+
+
+    error_code      VARCHAR(20) NULL,
+    error_message   VARCHAR(100) NULL,
+
+    created_at      TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_api_logs_user
+    FOREIGN KEY (user_id)
+    REFERENCES users (id)
+    ON DELETE SET NULL
+);
+
+-- 자주 조회할 만한 인덱스(선택)
+CREATE INDEX IF NOT EXISTS idx_api_logs_created_at ON api_logs (created_at);
+CREATE INDEX IF NOT EXISTS idx_api_logs_user_id     ON api_logs (user_id);
+CREATE INDEX IF NOT EXISTS idx_api_logs_result      ON api_logs (result);
+CREATE INDEX IF NOT EXISTS idx_api_logs_path        ON api_logs (path);
