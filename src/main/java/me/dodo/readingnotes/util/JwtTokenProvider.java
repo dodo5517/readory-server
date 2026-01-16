@@ -38,6 +38,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .setSubject(user.getEmail()) // 토큰 주인 email
                 .claim("userId", user.getId()) // 토큰 주인 ID
+                .claim("role", user.getRole()) // 토큰 주인 Role
                 .setIssuedAt(now) // 발급 시간
                 .setExpiration(expiryDate) // 만료 시간
                 .signWith(key) // 서명(변조 방지)
