@@ -3,10 +3,10 @@ package me.dodo.readingnotes.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import me.dodo.readingnotes.domain.ApiLog;
+import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.domain.UserAuthLog;
-import me.dodo.readingnotes.dto.admin.BookDetailResponse;
-import me.dodo.readingnotes.dto.admin.BookListResponse;
+import me.dodo.readingnotes.dto.admin.*;
 import me.dodo.readingnotes.dto.auth.ApiKeyResponse;
 import me.dodo.readingnotes.dto.common.MaskedApiKeyResponse;
 import me.dodo.readingnotes.dto.log.ApiLogDetailResponse;
@@ -14,7 +14,6 @@ import me.dodo.readingnotes.dto.log.ApiLogListResponse;
 import me.dodo.readingnotes.dto.log.AuthLogDetailResponse;
 import me.dodo.readingnotes.dto.log.AuthLogListResponse;
 import me.dodo.readingnotes.dto.user.*;
-import me.dodo.readingnotes.dto.admin.AdminPageUserResponse;
 import me.dodo.readingnotes.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,16 +34,19 @@ public class AdminController {
     private S3Service s3Service;
     private LogService logService;
     private BookService bookService;
+    private ReadingRecordService readingRecordService;
 
     public AdminController(UserService userService,
                            S3Service s3Service, AuthService authService,
                            LogService logService,
-                           BookService bookService) {
+                           BookService bookService,
+                           ReadingRecordService readingRecordService) {
         this.userService = userService;
         this.s3Service = s3Service;
         this.authService = authService;
         this.logService = logService;
         this.bookService = bookService;
+        this.readingRecordService = readingRecordService;
     }
 
     // ##############################
@@ -460,6 +462,85 @@ public class AdminController {
 
         // 복구
         bookService.restoreBook(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // ##############################
+    // 독서 기록 관리
+    // ##############################
+
+    // 전체 기록 목록 조회
+    @GetMapping("/records")
+    public Page<AdminRecordListResponse> getAllRecords(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) ReadingRecord.MatchStatus matchStatus,
+            @RequestParam(required = false) Long userId,
+            @PageableDefault(size = 20, sort = "recordedAt", direction = Sort.Direction.DESC) Pageable pageable,
+            HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 기록 목록 조회
+        return readingRecordService.findAllRecordsForAdmin(keyword, matchStatus, userId, pageable);
+    }
+
+    // 특정 기록 상세 조회
+    @GetMapping("/records/{id}")
+    public AdminRecordDetailResponse getRecord(@PathVariable Long id,
+                                               HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 기록 상세 조회
+        return readingRecordService.findRecordByIdForAdmin(id);
+    }
+
+    // 기록 수정
+    @PatchMapping("/records/{id}")
+    public AdminRecordDetailResponse updateRecord(@PathVariable Long id,
+                                                  @RequestBody AdminRecordUpdateRequest updateRequest,
+                                                  HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 기록 수정
+        return readingRecordService.updateRecordForAdmin(id, updateRequest);
+    }
+
+    // 기록 삭제
+    @DeleteMapping("/records/{id}")
+    public ResponseEntity<Void> deleteRecord(@PathVariable Long id,
+                                             HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 기록 삭제
+        readingRecordService.deleteRecordForAdmin(id);
 
         return ResponseEntity.noContent().build();
     }
