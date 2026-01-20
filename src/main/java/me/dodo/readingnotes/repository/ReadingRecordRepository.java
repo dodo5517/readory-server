@@ -234,4 +234,30 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                                            @Param("q") String q,
                                            Pageable pageable);
 
+    // ##############################
+    // 관리자 전용 메서드
+    // ##############################
+
+    // 관리자용: 전체 기록 조회 (검색 + 필터링)
+    @Query("SELECT r FROM ReadingRecord r " +
+            "JOIN FETCH r.user " +
+            "LEFT JOIN FETCH r.book " +
+            "WHERE (:keyword IS NULL OR " +
+            "       LOWER(r.rawTitle) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "       LOWER(r.rawAuthor) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "       LOWER(r.sentence) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "       LOWER(r.user.username) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
+            "AND (:matchStatus IS NULL OR r.matchStatus = :matchStatus) " +
+            "AND (:userId IS NULL OR r.user.id = :userId)")
+    Page<ReadingRecord> findAllForAdmin(@Param("keyword") String keyword,
+                                        @Param("matchStatus") ReadingRecord.MatchStatus matchStatus,
+                                        @Param("userId") Long userId,
+                                        Pageable pageable);
+
+    // 관리자용: ID로 기록 조회 (연관 엔티티 함께)
+    @Query("SELECT r FROM ReadingRecord r " +
+            "JOIN FETCH r.user " +
+            "LEFT JOIN FETCH r.book " +
+            "WHERE r.id = :id")
+    Optional<ReadingRecord> findByIdForAdmin(@Param("id") Long id);
 }

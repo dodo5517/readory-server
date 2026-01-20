@@ -37,7 +37,7 @@ public class BookService {
         return new BookDetailResponse(book);
     }
 
-    // 책 소프트 삭제
+    // 관리자용 책 소프트 삭제
     @Transactional
     public void softDeleteBook(Long id) {
         Book book = bookRepository.findById(id)
@@ -50,7 +50,7 @@ public class BookService {
         book.setDeletedAt(LocalDateTime.now());
     }
 
-    // 책 영구 삭제 (관리자 전용)
+    // 관리자용 책 영구 삭제 (관리자 전용)
     @Transactional
     public void hardDeleteBook(Long id) {
         if (!bookRepository.existsById(id)) {
@@ -59,7 +59,7 @@ public class BookService {
         bookRepository.deleteById(id);
     }
 
-    // 삭제된 책 복구
+    // 관리자용 삭제된 책 복구
     @Transactional
     public void restoreBook(Long id) {
         Book book = bookRepository.findById(id)
