@@ -7,6 +7,7 @@ import me.dodo.readingnotes.repository.AuthLogRepository;
 import me.dodo.readingnotes.util.RequestInfoExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,9 @@ public class AuthLogService {
     private final RequestInfoExtractor requestInfoExtractor;
     private static final Logger log = LoggerFactory.getLogger(AuthLogService.class);
 
+    @Value("${auth.log.success-enabled:false}")
+    private boolean successLogEnabled;
+
     public AuthLogService(AuthLogRepository authLogRepository,
                           RequestInfoExtractor requestInfoExtractor) {
         this.authLogRepository = authLogRepository;
@@ -26,20 +30,37 @@ public class AuthLogService {
     // 로그인 성공 로그 저장
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logLoginSuccess(User user, String identifier, String provider, HttpServletRequest request) {
+        if (!successLogEnabled) {
+            log.debug("Login success: user={}, provider={}, ip={}",
+                    user.getId(), provider, requestInfoExtractor.extractIp(request));
+            return;
+        }
         saveSafely(user, identifier, provider, UserAuthLog.AuthEventType.LOGIN, UserAuthLog.AuthResult.SUCCESS, null, request);
     }
 
     // 해당 기기 로그아웃 로그 저장
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logCurrentDeviceLogout(User user, String identifier, String provider, HttpServletRequest request) {
+        if (!successLogEnabled) {
+            log.debug("Logout current device: user={}, provider={}",
+                    user.getId(), provider);
+            return;
+        }
         saveSafely(user, identifier, provider, UserAuthLog.AuthEventType.LOGOUT_CURRENT_DEVICE, UserAuthLog.AuthResult.SUCCESS, null, request);
     }
+
 
     // 모든 기기 로그아웃 로그 저장
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logAllDeviceLogout(User user, String identifier, String provider, HttpServletRequest request) {
+        if (!successLogEnabled) {
+            log.debug("Logout all devices: user={}, provider={}",
+                    user.getId(), provider);
+            return;
+        }
         saveSafely(user, identifier, provider, UserAuthLog.AuthEventType.LOGOUT_ALL_DEVICES, UserAuthLog.AuthResult.SUCCESS, null, request);
     }
+
 
     // 로그인 실패 로그 저장
     @Transactional(propagation = Propagation.REQUIRES_NEW)

@@ -19,8 +19,8 @@ public class ApiLogInterceptor implements HandlerInterceptor {
     @Value("${api.log.slow-threshold-ms}")
     private int slowThresholdMs;
 
-    @Value("${api.log.success-sample-rate}")
-    private int successSampleRate;
+    @Value("${api.log.success-enabled}")
+    private boolean successLogEnabled;
 
     private final ApiLogService apiLogService;
     private final ApiLogRequestInfoExtractor extractor;
@@ -67,7 +67,7 @@ public class ApiLogInterceptor implements HandlerInterceptor {
                         : ApiLog.Result.FAIL;
 
         // 저장량 제어 핵심 정책
-        if (!shouldStore(result, statusCode, executionTimeMs, ex)) {
+        if (!shouldStore(result, executionTimeMs)) {
             return;
         }
 
@@ -108,8 +108,7 @@ public class ApiLogInterceptor implements HandlerInterceptor {
     }
 
     // FAIL 100% 저장, 느린 요청은 성공이어도 100% 저장, 그 외 성공 요청은 샘플링 저장
-    private boolean shouldStore(ApiLog.Result result, int statusCode, int executionTimeMs, Exception ex) {
-
+    private boolean shouldStore(ApiLog.Result result, int executionTimeMs) {
         // 실패(예외/4xx/5xx)는 무조건 저장
         if (result == ApiLog.Result.FAIL) return true;
 
@@ -117,11 +116,6 @@ public class ApiLogInterceptor implements HandlerInterceptor {
         if (executionTimeMs >= slowThresholdMs) return true;
 
         // 그 외 성공 요청은 샘플링
-        return sampleSuccess();
-    }
-
-    private boolean sampleSuccess() {
-        int r = ThreadLocalRandom.current().nextInt(100) + 1; // 1..100
-        return r <= successSampleRate;
+        return successLogEnabled;
     }
 }
