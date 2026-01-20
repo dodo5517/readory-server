@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import me.dodo.readingnotes.domain.ApiLog;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.domain.UserAuthLog;
+import me.dodo.readingnotes.dto.admin.BookDetailResponse;
+import me.dodo.readingnotes.dto.admin.BookListResponse;
 import me.dodo.readingnotes.dto.auth.ApiKeyResponse;
 import me.dodo.readingnotes.dto.common.MaskedApiKeyResponse;
 import me.dodo.readingnotes.dto.log.ApiLogDetailResponse;
@@ -32,15 +34,17 @@ public class AdminController {
     private UserService userService;
     private S3Service s3Service;
     private LogService logService;
+    private BookService bookService;
 
     public AdminController(UserService userService,
                            S3Service s3Service, AuthService authService,
                            LogService logService,
-                           ApiLogService apiLogService) {
+                           BookService bookService) {
         this.userService = userService;
         this.s3Service = s3Service;
         this.authService = authService;
         this.logService = logService;
+        this.bookService = bookService;
     }
 
     // ##############################
@@ -360,4 +364,104 @@ public class AdminController {
 
         return logService.findApiLog(id);
     }
+
+
+    // ##############################
+    // 책 관리
+    // ##############################
+
+    // 전체 책 목록 조회 (기본 = 10개)
+    @GetMapping("/books")
+    public Page<BookListResponse> getAllBooks(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false, defaultValue = "false") Boolean includeDeleted,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 페이지 조회 + 검색
+        return bookService.findAllBooksForAdmin(keyword, includeDeleted, pageable);
+    }
+
+    // 특정 책 상세 조회
+    @GetMapping("/books/{id}")
+    public BookDetailResponse getBook(@PathVariable Long id,
+                                      HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 책 정보 조회
+        return bookService.findBookById(id);
+    }
+
+    // 책 소프트 삭제 (deletedAt 설정)
+    @DeleteMapping("/books/{id}")
+    public ResponseEntity<Void> softDeleteBook(@PathVariable Long id,
+                                               HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 소프트 삭제
+        bookService.softDeleteBook(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // 책 영구 삭제 (DB에서 완전 삭제)
+    @DeleteMapping("/books/{id}/permanent")
+    public ResponseEntity<Void> hardDeleteBook(@PathVariable Long id,
+                                               HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 영구 삭제
+        bookService.hardDeleteBook(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // 삭제된 책 복구
+    @PostMapping("/books/{id}/restore")
+    public ResponseEntity<Void> restoreBook(@PathVariable Long id,
+                                            HttpServletRequest request) {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+
+        // 복구
+        bookService.restoreBook(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }
