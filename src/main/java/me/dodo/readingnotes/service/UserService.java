@@ -169,6 +169,21 @@ public class UserService {
         return true;
     }
 
+    // 유저 계정 초기화
+    @Transactional
+    public String reset(Long userId){
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+        // 새로운 무작위 비밀번호 해싱 후 저장
+        String newPassword = ApiKeyGenerator.generate();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        // api_key 재발급
+        user.setApiKey(ApiKeyGenerator.generate());
+        userRepository.save(user);
+
+        return newPassword;
+    }
+
     // 전체 유저 조회
     public Page<AdminPageUserResponse> findAllUsers(String keyword, String provider,
                                                     String role, Pageable pageable

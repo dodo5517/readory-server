@@ -1,6 +1,7 @@
 package me.dodo.readingnotes.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import me.dodo.readingnotes.domain.ApiLog;
 import me.dodo.readingnotes.domain.ReadingRecord;
@@ -15,10 +16,13 @@ import me.dodo.readingnotes.dto.log.AuthLogDetailResponse;
 import me.dodo.readingnotes.dto.log.AuthLogListResponse;
 import me.dodo.readingnotes.dto.user.*;
 import me.dodo.readingnotes.service.*;
+import me.dodo.readingnotes.util.CookieUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -130,6 +134,28 @@ public class AdminController {
 
         // 상태코드만 반환 (204)
         return ResponseEntity.noContent().build();
+    }
+
+    // 특정 유저 인증 초기화(비밀번호/api 재발급, 전체 로그아웃)
+    @PostMapping("/users/{id}/reset")
+    public String userReset(@PathVariable Long id, HttpServletRequest request,
+                            HttpServletResponse httpResponse) throws Exception {
+        // adminId 추출
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+        // 관리자 권한 있는지 확인
+        userService.assertAdmin(adminId);
+        // 모든 기기에서 로그아웃
+        authService.logoutAllDevices(id);
+        // refreshToken 쿠키 제거
+        ResponseCookie deleteCookie = CookieUtil.deleteRefreshTokenCookie();
+        // 헤더에 저장
+        httpResponse.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
+        // 비밀번호/api 재발급
+        String newPw = userService.reset(id);
+        return newPw;
     }
 
     // 특정 유저 프로필 사진 업로드
