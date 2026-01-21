@@ -30,7 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping("/api/admin")
 public class AdminController {
 
     private final AuthService authService;

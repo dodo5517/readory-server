@@ -5,10 +5,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import me.dodo.readingnotes.util.JwtTokenProvider;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -43,6 +47,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 //  로그 / 인터셉터 / 컨트롤러 공통 사용
                 request.setAttribute(ATTR_USER_ID, userId);
                 request.setAttribute(ATTR_USER_ROLE, role);
+                // SecurityContext에 인증 정보 설정
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userId,                                          // principal
+                                null,                                            // credentials
+                                List.of(new SimpleGrantedAuthority("ROLE_" + role))  // authorities
+                        );
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
 
         } catch (Exception e) {

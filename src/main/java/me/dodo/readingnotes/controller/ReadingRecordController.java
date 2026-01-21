@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/records")
+@RequestMapping("/api/records")
 public class ReadingRecordController {
     private static final Logger log = LoggerFactory.getLogger(ReadingRecordController.class);
 
