@@ -48,9 +48,23 @@ public class ReadingRecordController {
         if (userId == null) {
             return ResponseEntity.status(401).build(); // 필터가 보통 막지만 방어
         }
-        log.debug("Create Record, userID={}", userId);
+//        log.debug("Create Record, userID={}", userId);
         ReadingRecord saved = service.createByUserId(userId, req);
         return ResponseEntity.ok("문장: "+saved.getSentence()+"\n메모: "+saved.getComment()+"\n"+"기록을 저장했습니다.");
+    }
+
+    // 웹에서 메모 추가
+    @PostMapping("/web")
+    public ResponseEntity<Void> webCreate(HttpServletRequest request,
+                                       @RequestBody ReadingRecordRequest req) {
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
+//        log.debug("Create Record, userID={}", userId);
+        service.createByUserId(userId, req);
+        // 상태코드만 반환 (204)
+        return ResponseEntity.noContent().build();
     }
 
     // 해당 유저의 최근 N(default=3)개 기록 조회(메인 화면용)
