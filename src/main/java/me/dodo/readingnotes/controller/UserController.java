@@ -8,23 +8,22 @@ import me.dodo.readingnotes.dto.user.UpdatePasswordRequest;
 import me.dodo.readingnotes.dto.user.UpdateUsernameRequest;
 import me.dodo.readingnotes.dto.user.UserRequest;
 import me.dodo.readingnotes.dto.user.UserResponse;
-import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.service.S3Service;
 import me.dodo.readingnotes.service.UserService;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.util.JwtTokenProvider;
 import org.slf4j.Logger; // java.util.logging.Logger 보다 세부 설정 가능.
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
@@ -54,34 +53,49 @@ public class UserController {
     // 로그인한 유저의 정보 조회
     @GetMapping("/me")
     public UserResponse getMe(HttpServletRequest request){
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
+
         User user = userService.findUserById(userId);
         return new UserResponse(user);
     }
 
-    // 유저 프로필 사진
-    @PostMapping("/{id}/profile-image")
-    public ResponseEntity<String> uploadProfileImage(@PathVariable Long id,
-                                                     @RequestParam("image") MultipartFile image) throws Exception {
+    // 유저 프로필 사진 업로드
+    @PostMapping("/me/profile-image")
+    public ResponseEntity<String> uploadProfileImage(@RequestParam("image") MultipartFile image,
+                                                     HttpServletRequest httpRequest) throws Exception {
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) httpRequest.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
+
         // 기존 이미지 삭제
-        userService.deleteProfileImage(id);
+        userService.deleteProfileImage(userId);
 
         // 새 이미지 업로드
-        String fileName = "user-" + id + "_" + UUID.randomUUID();
+        String fileName = "user-" + userId + "_" + UUID.randomUUID();
         String imageUrl = s3Service.uploadProfileImage(image, fileName);
 
-        userService.updateProfileImage(id, imageUrl); // DB에 URL 저장
+        userService.updateProfileImage(userId, imageUrl); // DB에 URL 저장
 
         return ResponseEntity.ok(imageUrl);
     }
 
     // 유저 프로필 사진 삭제
-    @DeleteMapping("/{id}/profile-image")
-    public ResponseEntity<Void> deleteProfileImage(@PathVariable Long id) {
-        userService.deleteProfileImage(id);
-        userService.updateProfileImage(id, null); // DB에서 URL 제거
+    @DeleteMapping("/me/profile-image")
+    public ResponseEntity<Void> deleteProfileImage(HttpServletRequest httpRequest) {
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) httpRequest.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
+
+        userService.deleteProfileImage(userId);
+        userService.updateProfileImage(userId, null); // DB에서 URL 제거
         return ResponseEntity.noContent().build();
     }
     
@@ -90,13 +104,11 @@ public class UserController {
     @PatchMapping("/me/username")
     public ResponseEntity<Void> updateUsername(@RequestBody @Valid UpdateUsernameRequest request,
                                                HttpServletRequest httpRequest){
-        log.debug("유저이름 수정 요청");
-        log.debug("수정할 이름: {}", request.getNewUsername());
-
-        // 토큰에서 userId 추출
-        String accessToken = jwtTokenProvider.extractToken(httpRequest);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) httpRequest.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         // 유저 이름 수정
         Boolean result = userService.updateUsername(userId, request.getNewUsername());
@@ -112,12 +124,11 @@ public class UserController {
     @PatchMapping("/me/password")
     public ResponseEntity<Void> updatePassword(@RequestBody @Valid UpdatePasswordRequest request,
                                                HttpServletRequest httpRequest){
-        log.debug("비밀번호 수정 요청");
-        
-        // 토큰에서 userId 추출
-        String accessToken = jwtTokenProvider.extractToken(httpRequest);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) httpRequest.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         // 유저 비밀번호 수정
         Boolean result = userService.updatePassword(userId, request.getCurrentPassword(), request.getNewPassword());
@@ -129,21 +140,16 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // 특정 유저 조희
-    @GetMapping("/{id}")
-    public UserResponse getUser(@PathVariable Long id){
-        User user = userService.findUserById(id);
-        return new UserResponse(user);
-    }
-
     // api_key 재발급
     @PostMapping("/api-key/reissue")
     public ResponseEntity<MaskedApiKeyResponse> reissueApiKey(HttpServletRequest request) {
         log.debug("API Key 재발급 요청");
 
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         String maskedApiKey = userService.reissueApiKey(userId);
         return ResponseEntity.ok(new MaskedApiKeyResponse("API Key가 새로 발급되었습니다.", maskedApiKey));
@@ -154,31 +160,24 @@ public class UserController {
     public ResponseEntity<ApiKeyResponse> getApiKey(HttpServletRequest request) {
         log.debug("API Key 전체 조회 요청");
 
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         String apiKey = userService.getRawApiKey(userId);
         return ResponseEntity.ok(new ApiKeyResponse("API Key 조회 성공", apiKey));
     }
-    
-    // 모든 유저 조희 (관리자만 볼 실행할 수 있도록 수정해야 함.)
-//    @GetMapping("/all")
-//    public List<UserResponse> getAllUsers(){
-//        List<User> users = userService.findAllUsers();
-//        List<UserResponse> userResponses = new ArrayList<>();
-//        for (User user : users) {
-//            userResponses.add(new UserResponse(user));
-//        }
-//        return userResponses;
-//    }
 
     // 유저 탈퇴
     @DeleteMapping("/delete")
     public Boolean deleteUser(HttpServletRequest request){
-        String accessToken = jwtTokenProvider.extractToken(request);
-        jwtTokenProvider.assertValid(accessToken);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
 
         return userService.deleteUserById(userId);
     }

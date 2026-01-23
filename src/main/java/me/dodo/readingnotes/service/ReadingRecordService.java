@@ -5,6 +5,9 @@ import me.dodo.readingnotes.config.OAuth2SuccessHandler;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.domain.User;
+import me.dodo.readingnotes.dto.admin.AdminRecordDetailResponse;
+import me.dodo.readingnotes.dto.admin.AdminRecordListResponse;
+import me.dodo.readingnotes.dto.admin.AdminRecordUpdateRequest;
 import me.dodo.readingnotes.dto.book.*;
 import me.dodo.readingnotes.dto.reading.ReadingRecordItem;
 import me.dodo.readingnotes.dto.reading.ReadingRecordRequest;
@@ -174,9 +177,23 @@ public class ReadingRecordService {
         // 기록 시간 내림차순 → id 내림차순.
         Sort sort = Sort.by("recordedAt").descending().and(Sort.by("id").descending());
         // 커서가 있다면 커서보다 더 작은(과거) 레코드만 가져옴.
-        List<ReadingRecord> fetched = readingRecordRepository.findSliceByUserAndBookWithCursor(
-                userId, bookId, c.cursorAt, c.cursorId, PageRequest.of(0, pageSize + 1, sort)
-        );
+        // sqlite
+//        List<ReadingRecord> fetched = readingRecordRepository.findSliceByUserAndBookWithCursor(
+//                userId, bookId, c.cursorAt, c.cursorId, PageRequest.of(0, pageSize + 1, sort)
+//        );
+        // postgreSql
+        List<ReadingRecord> fetched;
+        if (c == null || c.cursorAt == null || c.cursorId == null) {
+            // 첫 페이지
+            fetched = readingRecordRepository.findSliceFirstPage(
+                    userId, bookId, PageRequest.of(0, pageSize + 1, sort)
+            );
+        } else {
+            // 다음 페이지
+            fetched = readingRecordRepository.findSliceNextPage(
+                    userId, bookId, c.cursorAt, c.cursorId, PageRequest.of(0, pageSize + 1, sort)
+            );
+        }
 
         // 기록이 더 남았는지 확인(남았으면=true, 안 남았으면=false)
         boolean hasMore = fetched.size() > pageSize;
@@ -286,6 +303,63 @@ public class ReadingRecordService {
         ReadingRecord record = readingRecordRepository.findByIdAndUserId(recordId, userId)
                 .orElseThrow(()-> new IllegalArgumentException("해당 유저의 해당 레코드가 존재하지 않습니다: "+ userId +"의"+ recordId));
         // 삭제
+        readingRecordRepository.delete(record);
+    }
+
+
+    // ##############################
+    // 관리자 전용 메서드
+    // ##############################
+
+    // 관리자용: 전체 기록 목록 조회 (검색 + 필터링)
+    @Transactional(readOnly = true)
+    public Page<AdminRecordListResponse> findAllRecordsForAdmin(String keyword,
+                                                                ReadingRecord.MatchStatus matchStatus,
+                                                                Long userId,
+                                                                Pageable pageable) {
+        return readingRecordRepository.findAllForAdmin(keyword, matchStatus, userId, pageable)
+                .map(AdminRecordListResponse::new);
+    }
+
+    // 관리자용: 특정 기록 상세 조회
+    @Transactional(readOnly = true)
+    public AdminRecordDetailResponse findRecordByIdForAdmin(Long id) {
+        ReadingRecord record = readingRecordRepository.findByIdForAdmin(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 기록을 찾을 수 없습니다. id=" + id));
+        return new AdminRecordDetailResponse(record);
+    }
+
+    // 관리자용: 기록 수정 (userId 체크 없음)
+    @Transactional
+    public AdminRecordDetailResponse updateRecordForAdmin(Long id, AdminRecordUpdateRequest request) {
+        ReadingRecord record = readingRecordRepository.findByIdForAdmin(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 기록을 찾을 수 없습니다. id=" + id));
+
+        // null이 아닌 필드만 업데이트
+        if (request.getRawTitle() != null) record.setRawTitle(request.getRawTitle());
+        if (request.getRawAuthor() != null) record.setRawAuthor(request.getRawAuthor());
+        if (request.getSentence() != null) record.setSentence(request.getSentence());
+        if (request.getComment() != null) record.setComment(request.getComment());
+        record.setUpdatedAt(LocalDateTime.now());
+
+        // 책 정보 변경 시 재매칭
+        if (request.getRawTitle() != null || request.getRawAuthor() != null) {
+            bookLinkService.removeBookMatch(id);
+
+            if (present(record.getRawTitle()) && present(record.getRawAuthor())) {
+                matchingBook(record);
+            }
+        }
+
+        ReadingRecord saved = readingRecordRepository.save(record);
+        return new AdminRecordDetailResponse(saved);
+    }
+
+    // 관리자용: 기록 삭제 (userId 체크 없음)
+    @Transactional
+    public void deleteRecordForAdmin(Long id) {
+        ReadingRecord record = readingRecordRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 기록을 찾을 수 없습니다. id=" + id));
         readingRecordRepository.delete(record);
     }
 

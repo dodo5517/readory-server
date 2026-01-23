@@ -57,6 +57,11 @@ public class User {
     public User(){
     }
 
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
+
     @Override // toString 예쁘게 보기 위해 오버라이딩
     public String toString() {
         return "User{" +

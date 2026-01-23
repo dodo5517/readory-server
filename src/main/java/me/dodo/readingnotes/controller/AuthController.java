@@ -12,13 +12,14 @@ import me.dodo.readingnotes.util.CookieUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import me.dodo.readingnotes.util.JwtTokenProvider;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
@@ -69,8 +70,12 @@ public class AuthController {
         // Header에서 User-Agent 가져옴
         String userAgent = httpRequest.getHeader("User-Agent");
 
-        String token = jwtTokenProvider.extractToken(httpRequest);
-        Long userId = jwtTokenProvider.getUserIdFromToken(token);
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) httpRequest.getAttribute("USER_ID");
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         authService.logoutUser(userId, userAgent);
 
@@ -90,9 +95,13 @@ public class AuthController {
         // 이미 만료된 쿠키로 요청이 올 수도 있으므로 @CookieValue는 굳이 받지 않음.
 
         log.debug("모든 기기에서 로그아웃 요청");
-        
-        String accessToken = jwtTokenProvider.extractToken(httpRequest);
-        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) httpRequest.getAttribute("USER_ID");
+
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         authService.logoutAllDevices(userId);
 

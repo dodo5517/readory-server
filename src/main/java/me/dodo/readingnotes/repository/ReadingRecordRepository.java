@@ -80,13 +80,15 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                                             @Param("q") String q,
                                             Pageable pageable);
 
-    // 해당 유저의 특정 책 찾기
+    // 해당 유저의 특정 책 찾기 (postgreSql은 밑처럼 하면 문제 생겨서 cursor 유무로 분기함.)
+    // sqlite
     @Query("""
         select r
           from ReadingRecord r
          where r.user.id = :userId
            and r.book.id = :bookId
-           and ( :cursorAt is null
+           and ( 
+                :cursorAt is null
                  or r.recordedAt < :cursorAt
                  or (r.recordedAt = :cursorAt and r.id < :cursorId) )
          order by r.recordedAt desc, r.id desc
@@ -98,6 +100,34 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
             @Param("cursorId") Long cursorId,
             Pageable pageable
     );
+    // postgreSQL
+    @Query("""
+        select r from ReadingRecord r
+        where r.user.id = :userId
+          and r.book.id = :bookId
+        order by r.recordedAt desc, r.id desc
+        """)
+    List<ReadingRecord> findSliceFirstPage(
+            @Param("userId") Long userId,
+            @Param("bookId") Long bookId,
+            Pageable pageable
+    );
+    @Query("""
+        select r from ReadingRecord r
+        where r.user.id = :userId
+          and r.book.id = :bookId
+          and (r.recordedAt < :cursorAt or (r.recordedAt = :cursorAt and r.id < :cursorId))
+        order by r.recordedAt desc, r.id desc
+        """)
+    List<ReadingRecord> findSliceNextPage(
+            @Param("userId") Long userId,
+            @Param("bookId") Long bookId,
+            @Param("cursorAt") LocalDateTime cursorAt,
+            @Param("cursorId") Long cursorId,
+            Pageable pageable
+    );
+
+
     // 기간 계산(해당 유저의 해당 책 기록 중 가장 과거/가장 최근)
     @Query("""
         select min(r.recordedAt)
@@ -159,16 +189,28 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     Page<BookWithLastRecordResponse> findConfirmedBooksByTitle(Long userId, String q, Pageable pageable);
 
     // Day 목록
+    // sqlite
+//    @Query("""
+//        select
+//           function('strftime', '%Y-%m-%d', r.recordedAt) as day,
+//           count(r) as cnt
+//        from ReadingRecord r
+//        where r.user.id = :userId
+//          and r.recordedAt >= :start and r.recordedAt < :end
+//        group by function('strftime', '%Y-%m-%d', r.recordedAt)
+//        order by function('strftime', '%Y-%m-%d', r.recordedAt) asc
+//        """)
+    // postgreSQL
     @Query("""
         select
-           function('strftime', '%Y-%m-%d', r.recordedAt) as day,
+           function('date', r.recordedAt) as day,
            count(r) as cnt
         from ReadingRecord r
         where r.user.id = :userId
           and r.recordedAt >= :start and r.recordedAt < :end
-        group by function('strftime', '%Y-%m-%d', r.recordedAt)
-        order by function('strftime', '%Y-%m-%d', r.recordedAt) asc
-        """)
+        group by function('date', r.recordedAt)
+        order by function('date', r.recordedAt) asc
+    """)
     List<DayCountRow> countByDayInRange(@Param("userId") Long userId,
                                         @Param("start") LocalDateTime start,
                                         @Param("end") LocalDateTime end);
@@ -192,4 +234,30 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                                            @Param("q") String q,
                                            Pageable pageable);
 
+    // ##############################
+    // 관리자 전용 메서드
+    // ##############################
+
+    // 관리자용: 전체 기록 조회 (검색 + 필터링)
+    @Query("SELECT r FROM ReadingRecord r " +
+            "JOIN FETCH r.user " +
+            "LEFT JOIN FETCH r.book " +
+            "WHERE (:keyword IS NULL OR " +
+            "       LOWER(r.rawTitle) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "       LOWER(r.rawAuthor) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "       LOWER(r.sentence) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
+            "       LOWER(r.user.username) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
+            "AND (:matchStatus IS NULL OR r.matchStatus = :matchStatus) " +
+            "AND (:userId IS NULL OR r.user.id = :userId)")
+    Page<ReadingRecord> findAllForAdmin(@Param("keyword") String keyword,
+                                        @Param("matchStatus") ReadingRecord.MatchStatus matchStatus,
+                                        @Param("userId") Long userId,
+                                        Pageable pageable);
+
+    // 관리자용: ID로 기록 조회 (연관 엔티티 함께)
+    @Query("SELECT r FROM ReadingRecord r " +
+            "JOIN FETCH r.user " +
+            "LEFT JOIN FETCH r.book " +
+            "WHERE r.id = :id")
+    Optional<ReadingRecord> findByIdForAdmin(@Param("id") Long id);
 }
