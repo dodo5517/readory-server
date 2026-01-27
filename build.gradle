@@ -50,8 +50,9 @@ dependencies {
     implementation "software.amazon.awssdk:auth:$awsSdkVersion"
 
     implementation 'org.springframework.boot:spring-boot-starter-webflux'   // WebClient
-    implementation 'org.springframework.boot:spring-boot-starter-cache'     // 캐시
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'           // 캐시 구현체
+    implementation 'net.coobird:thumbnailator:0.4.20' // image resizeing
+//    implementation 'org.springframework.boot:spring-boot-starter-cache'     // 캐시
+//    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'           // 캐시 구현체
     implementation 'org.apache.commons:commons-text:1.11.0'                  // 문자열 유사도
 }
 
