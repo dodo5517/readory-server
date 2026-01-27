@@ -11,7 +11,7 @@ import me.dodo.readingnotes.dto.user.UserResponse;
 import me.dodo.readingnotes.service.S3Service;
 import me.dodo.readingnotes.service.UserService;
 import me.dodo.readingnotes.domain.User;
-import me.dodo.readingnotes.util.JwtTokenProvider;
+import me.dodo.readingnotes.util.ImageResizer;
 import org.slf4j.Logger; // java.util.logging.Logger 보다 세부 설정 가능.
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -20,23 +20,24 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
-    private final S3Service s3Service;
-    private final JwtTokenProvider jwtTokenProvider;
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
+    private final S3Service s3Service;
+    private final ImageResizer imageResizer;
 
     public UserController(UserService userService,
                           S3Service s3Service,
-                          JwtTokenProvider jwtTokenProvider) {
-            this.userService = userService; // controller에 service 의존성 주입
-            this.s3Service = s3Service;
-            this.jwtTokenProvider = jwtTokenProvider;
+                          ImageResizer imageResizer) {
+        this.userService = userService; // controller에 service 의존성 주입
+        this.s3Service = s3Service;
+        this.imageResizer = imageResizer;
     }
 
     // post(일반 회원가입)
@@ -76,11 +77,20 @@ public class UserController {
         // 기존 이미지 삭제
         userService.deleteProfileImage(userId);
 
-        // 새 이미지 업로드
-        String fileName = "user-" + userId + "_" + UUID.randomUUID();
-        String imageUrl = s3Service.uploadProfileImage(image, fileName);
+        // 이미지 리사이징 (byte로 return 함.)
+        byte[] resizedImage = imageResizer.resizeImageKeepRatio(image);
 
-        userService.updateProfileImage(userId, imageUrl); // DB에 URL 저장
+        // 이미지 파일 이름 생성
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS"));
+        String fileName = "user-" + userId + "_" + timestamp;
+
+        // 새 이미지 업로드
+//        String imageUrl = supabaseStorageService.uploadFile(resizedImage, fileName, image.getContentType());
+        String imageUrl = s3Service.uploadProfileImage(resizedImage, fileName, image.getContentType());
+
+        // DB에 URL 저장
+        userService.updateProfileImage(userId, imageUrl);
 
         return ResponseEntity.ok(imageUrl);
     }

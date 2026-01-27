@@ -3,9 +3,7 @@ package me.dodo.readingnotes.service;
 // jakarta.transaction.Transactional 보다 밑에가 spring framework 전용으로 연동 잘 됨.
 import me.dodo.readingnotes.dto.admin.AdminPageUserResponse;
 import me.dodo.readingnotes.exception.PasswordMismatchException;
-import me.dodo.readingnotes.repository.RefreshTokenRepository;
 import me.dodo.readingnotes.util.ApiKeyGenerator;
-import me.dodo.readingnotes.util.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -26,7 +24,9 @@ public class UserService {
     private final S3Service s3Service;
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider, RefreshTokenRepository refreshTokenRepository, S3Service s3Service) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       S3Service s3Service) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.s3Service = s3Service;
@@ -105,8 +105,9 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
         if (user.getProfileImageUrl() != null){
-            String key = extractKeyFromUrl(user.getProfileImageUrl());
-            s3Service.deleteFile(key);
+            String fileName = extractKeyFromUrl(user.getProfileImageUrl());
+//            supabaseStorageService.deleteFile(fileName);
+            s3Service.deleteFile(fileName);
         }
 
     }

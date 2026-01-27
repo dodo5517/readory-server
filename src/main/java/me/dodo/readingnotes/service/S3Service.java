@@ -2,7 +2,6 @@ package me.dodo.readingnotes.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -14,11 +13,11 @@ import java.io.IOException;
 public class S3Service {
     private final S3Client s3Client;
 
-    @Value("${cloud.aws.s3.bucket}")
-    private String bucket;
+    @Value("${supabase.storage.url}")
+    private String baseUrl;
 
-    @Value("${cloud.aws.region.static}")
-    private String region;
+    @Value("${supabase.storage.bucket}")
+    private String bucket;
 
     public S3Service(S3Client s3Client) {
         this.s3Client = s3Client;
@@ -26,28 +25,26 @@ public class S3Service {
 
 
     // 사진 업로드
-    public String uploadProfileImage(MultipartFile file, String fileName) throws IOException {
-        String key = "profiles/" + fileName;
-
+    public String uploadProfileImage(byte[] file, String fileName, String contentType) throws IOException {
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucket)
-                .key(key)
-                .contentType(file.getContentType())
+                .key(fileName)
+                .contentType(contentType)
                 .build();
 
-        s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
+        s3Client.putObject(request, RequestBody.fromBytes(file));
 
-        return getPublicUrl(key);
+        return getPublicUrl(fileName);
     }
-    private String getPublicUrl(String key) {
-        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key);
+    private String getPublicUrl(String fileName) {
+        return baseUrl + "/" + bucket + "/" + fileName;
     }
 
     // 사진 삭제
-    public void deleteFile(String key){
+    public void deleteFile(String fileName){
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                 .bucket(bucket)
-                .key(key)
+                .key(fileName)
                 .build();
         s3Client.deleteObject(deleteObjectRequest);
     }

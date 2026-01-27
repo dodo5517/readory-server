@@ -11,13 +11,13 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Configuration
 public class S3Config {
 
-    @Value("${cloud.aws.region.static}")
+    @Value("${supabase.storage.region}")
     private String region;
 
-    @Value("${cloud.aws.credentials.access-key}")
+    @Value("${supabase.storage.access-key}")
     private String accessKey;
 
-    @Value("${cloud.aws.credentials.secret-key}")
+    @Value("${supabase.storage.secret-key}")
     private String secretKey;
 
     @Bean
