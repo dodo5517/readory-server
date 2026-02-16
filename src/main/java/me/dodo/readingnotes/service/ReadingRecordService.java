@@ -1,7 +1,7 @@
 package me.dodo.readingnotes.service;
 
 import jakarta.persistence.EntityNotFoundException;
-import me.dodo.readingnotes.config.OAuth2SuccessHandler;
+import me.dodo.readingnotes.dto.book.MatchResult;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.domain.User;
@@ -31,8 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static me.dodo.readingnotes.domain.ReadingRecord.MatchStatus.PENDING;
+import java.util.stream.Collectors;
 
 @Service
 public class ReadingRecordService {
@@ -67,7 +66,6 @@ public class ReadingRecordService {
     public ReadingRecord createByUserId(Long userId, ReadingRecordRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
-
         ReadingRecord record = new ReadingRecord();
         record.setUser(user);
         record.setSentence(req.getSentence());
@@ -79,7 +77,6 @@ public class ReadingRecordService {
 
         ReadingRecord saved = readingRecordRepository.save(record);
 
-
         // 제목+작가 모두 있을 경우
         if (present(saved.getRawTitle()) && present(saved.getRawAuthor())) {
             // 책 검색 후 매칭
@@ -89,32 +86,70 @@ public class ReadingRecordService {
     }
     // 책 검색 후 매칭
     private void matchingBook(ReadingRecord record) {
-        // Kakao 검색
-        List<BookCandidate> candidates = kakaoBookClient.search(record.getRawTitle(), record.getRawAuthor(), 10);
+        // 기존 책 테이블에서 책 검색
+        List<Book> existingBooks = bookMatcherService.fetchCandidatesFromBookTable(record.getRawTitle(), record.getRawAuthor());
+        
+        // 최종 선택된 책
+        MatchResult result;
 
-        // BookMatcher로 베스트 선택
-        BookMatcherService.MatchResult result =
-                bookMatcherService.pickBest(record.getRawTitle(), record.getRawAuthor(), candidates);
+        // 책 테이블에 책이 있다면
+        if (!existingBooks.isEmpty()) {
+            // Book -> BookCandidate 변환
+            List<BookCandidate> candidates = existingBooks.stream()
+                    .map(b -> {
+                        BookCandidate c = new BookCandidate();
+                        c.setSource("LOCAL"); // local에서 찾은 책이라면 book table에 upsert 안 함.
+                        c.setExternalId(String.valueOf(b.getId())); // externalId가 String이므로
+                        c.setTitle(b.getTitle());
+                        c.setAuthor(b.getAuthor());
+                        c.setIsbn10(b.getIsbn10());
+                        c.setIsbn13(b.getIsbn13());
+                        c.setPublisher(b.getPublisher());
+                        c.setPublishedDate(b.getPublishedDate());
+                        c.setThumbnailUrl(b.getCoverUrl());
+                        c.setScore(0.0);
+                        return c;
+                    })
+                    .collect(Collectors.toList());
+
+            // 매칭 시도
+            result = bookMatcherService.pickBest(record.getRawTitle(), record.getRawAuthor(), candidates);
+
+            // 강매칭이거나 높은 점수면 기존 책 사용
+            if (result.isAutoMatch() || result.getScore() > 0.85) {
+                log.info("기존 책 테이블에서 매칭 성공: {} (score: {})",
+                        result.getBest().getTitle(),
+                        result.getScore());
+            }
+
+            log.info("기존 책 중 확실한 매칭 없음. 외부 API 검색 진행...");
+        } else {
+            // Kakao 검색
+            List<BookCandidate> candidates = kakaoBookClient.search(record.getRawTitle(), record.getRawAuthor(), 10);
+
+            // BookMatcher로 베스트 선택
+            result = bookMatcherService.pickBest(record.getRawTitle(), record.getRawAuthor(), candidates);
+        }
 
         // 자동 확정이면 저장 진입점으로 위임
-        if (result.best != null && result.autoMatch) {
+        if (result.getBest() != null && result.isAutoMatch()) {
             //검색결과 DTO → 저장 명령 DTO 변환
-            LinkBookRequest reqDto = LinkBookRequest.fromCandidate(result.best);
+            LinkBookRequest reqDto = LinkBookRequest.fromCandidate(result.getBest());
 
             // 스냅샷(근거 데이터) JSON 구성
             Map<String, Object> snapshot = Map.of(
                     "provider", reqDto.getSource(), // "KAKAO"
-                    "score", result.score,
+                    "score", result.getScore(),
                     "query", Map.of("title", record.getRawTitle(), "author", record.getRawAuthor()),
                     "candidate", Map.of(
-                            "title", result.best.getTitle(),
-                            "author", result.best.getAuthor(),
-                            "isbn10", result.best.getIsbn10(),
-                            "isbn13", result.best.getIsbn13(),
-                            "publisher", result.best.getPublisher(),
-                            "publishedDate", result.best.getPublishedDate() == null ? null : result.best.getPublishedDate().toString(),
-                            "thumbnailUrl", result.best.getThumbnailUrl(),
-                            "externalId", result.best.getExternalId()
+                            "title", result.getBest().getTitle(),
+                            "author", result.getBest().getAuthor(),
+                            "isbn10", result.getBest().getIsbn10(),
+                            "isbn13", result.getBest().getIsbn13(),
+                            "publisher", result.getBest().getPublisher(),
+                            "publishedDate", result.getBest().getPublishedDate() == null ? null : result.getBest().getPublishedDate().toString(),
+                            "thumbnailUrl", result.getBest().getThumbnailUrl(),
+                            "externalId", result.getBest().getExternalId()
                     ),
                     "matcher", Map.of(
                             "threshold", 0.88,
@@ -125,7 +160,7 @@ public class ReadingRecordService {
             String snapshotJson = toJsonSafe(snapshot); // 아래 유틸 참고
 
             // Book/Link/Record 한 번에 처리
-            bookLinkService.linkRecordAuto(record.getId(), reqDto, result.score, snapshotJson);
+            bookLinkService.linkRecordAuto(record.getId(), reqDto, result.getScore(), snapshotJson);
         }
     }
     private boolean present(String s) { return s != null && !s.isBlank(); }
