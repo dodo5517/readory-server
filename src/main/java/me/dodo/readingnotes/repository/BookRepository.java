@@ -7,16 +7,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
     // 필요하면 여기에 커스텀 쿼리도 작성
 
     Optional<Book> findByIsbn13(String isbn13);
-    boolean existsByIsbn13(String isbn13);
-
-    // ISBN이 없을 때 임시 중복 방지용
-    Optional<Book> findFirstByTitleAndAuthor(String title, String author);
 
     // 삭제되지 않은 책 목록 조회 (검색 + 페이징)
     @Query("SELECT b FROM Book b WHERE b.deletedAt IS NULL " +
@@ -38,4 +35,14 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     Page<Book> findAllForAdmin(@Param("keyword") String keyword,
                                @Param("includeDeleted") Boolean includeDeleted,
                                Pageable pageable);
+
+    // 책 테이블에서 유사한 후보 추출
+    @Query("SELECT b FROM Book b WHERE " +
+            "LOWER(b.title) LIKE LOWER(CONCAT(:titlePrefix, '%')) OR " +
+            "LOWER(b.author) LIKE LOWER(CONCAT('%', :author, '%'))")
+    List<Book> findCandidates(
+            @Param("titlePrefix") String titlePrefix,
+            @Param("author") String author
+    );
+
 }
