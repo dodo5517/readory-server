@@ -17,9 +17,6 @@ public class KakaoBookClient implements BookSearchClient {
     private static final Logger log = LoggerFactory.getLogger(KakaoBookClient.class);
     private final WebClient webClient;
 
-    @Value("${external.kakao.book.search-path:/v3/search/book}")
-    private String searchPath;
-
     public KakaoBookClient(@Qualifier("kakaoBookWebClient") WebClient webClient) {
         this.webClient = webClient;
     }
@@ -35,8 +32,7 @@ public class KakaoBookClient implements BookSearchClient {
 
         // 책 검색
         KakaoResponse resp = webClient.get()
-                .uri(uri -> uri.path(searchPath)
-                        .queryParam("query", query)
+                .uri(uri -> uri.queryParam("query", query)
                         .queryParam("size", size)
                         .queryParam("sort", "accuracy") // 정확도순으로 정렬
                         .build())
