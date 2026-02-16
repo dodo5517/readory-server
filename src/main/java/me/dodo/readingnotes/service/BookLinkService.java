@@ -92,9 +92,10 @@ public class BookLinkService {
         return b;
     }
 
-    // BookSourceLink 엔티티에 upsert
+    // BookSourceLink 엔티티에 upsert (local에서 찾은 책이라면 book table에 upsert 안 함.)
     private void upsertSourceLink(Book book, LinkBookRequest r, Double score, String metaJson) {
         if (r.getSource() == null) return;
+        if (r.getSource() == "LOCAL") return; // LOCAL은 pass
         // 기존 값 없으면 새로 생성
         BookSourceLink link = linkRepo.findBySourceAndExternalId(r.getSource(), r.getExternalId())
                 .orElseGet(BookSourceLink::new);
