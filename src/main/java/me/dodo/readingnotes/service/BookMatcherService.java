@@ -1,15 +1,23 @@
 package me.dodo.readingnotes.service;
 
+import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.dto.book.BookCandidate;
+import me.dodo.readingnotes.dto.book.MatchResult;
+import me.dodo.readingnotes.repository.BookRepository;
 import org.apache.commons.text.similarity.JaroWinklerSimilarity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class BookMatcherService {
+
+    @Autowired
+    BookRepository bookRepository;
 
     // 이 점수 이상이면 자동 매칭(1.0 = 동일문자)
     private static final double AUTO_MATCH_THRESHOLD = 0.88;
@@ -29,12 +37,38 @@ public class BookMatcherService {
     // 문자열 유사도 알고리즘
     private final JaroWinklerSimilarity sim = new JaroWinklerSimilarity();
 
+    public List<Book> fetchCandidatesFromBookTable(String rawTitle, String rawAuthor) {
+        String nt = normTitle(rawTitle);
+        String na = normAuthorField(rawAuthor);
+
+        // 제목 앞 2~3글자 추출
+        String titlePrefix = extractPrefix(nt, 2);
+
+        // 제목 첫 2~3글자 또는 키워드 매칭, 작가명 포함
+        List<Book> roughMatches = bookRepository.findCandidates(titlePrefix, na);
+
+        // 메모리에서 정밀 필터링
+        return roughMatches.stream()
+                .filter(book -> {
+                    String ct = normTitle(book.getTitle());
+                    String ca = normAuthorField(book.getAuthor());
+
+                    // 유사도가 일정 수준 이상인 것만
+                    double titleSim = sim.apply(nt, ct);
+                    double authorSim = sim.apply(na, ca);
+
+                    return titleSim > 0.6 || authorSim > 0.7;
+                })
+                .limit(10)  // 최대 10개로 제한
+                .collect(Collectors.toList());
+    }
+
+    // 가장 유사도 높은 책 선택 메서드
     public MatchResult pickBest(String rawTitle, String rawAuthor, List<BookCandidate> candidates){
         // 제목, 작가를 정규화함.
         // NFC + 부제/꼬리 제거 + 공백/구두점 정리
         String nt = normTitle(rawTitle);
         String na = normAuthorField(rawAuthor);
-
 
         // 최고 점수의 후보와 그 점수
         BookCandidate best = null;
@@ -135,15 +169,11 @@ public class BookMatcherService {
     }
     private static double nonNull(Double d) { return d == null ? 0.0 : d; }
 
-    // 매칭 결과 객체
-    public static class MatchResult {
-        public final BookCandidate best;
-        public final double score;
-        public final boolean autoMatch;
-        public MatchResult(BookCandidate best, double score, boolean autoMatch) {
-            this.best = best;
-            this.score = score;
-            this.autoMatch = autoMatch;
+    // 앞 몇 글자만 추출
+    private String extractPrefix(String normalized, int length) {
+        if (normalized == null || normalized.isEmpty()) {
+            return "";
         }
+        return normalized.substring(0, Math.min(length, normalized.length()));
     }
 }
