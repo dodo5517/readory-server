@@ -5,5 +5,4 @@ import java.util.List;
 
 public interface BookSearchClient {
     List<BookCandidate> search(String rawTitle, String rawAuthor, int limit);
-    String getSource();
 }
