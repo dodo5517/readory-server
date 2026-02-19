@@ -12,7 +12,7 @@ import me.dodo.readingnotes.dto.book.*;
 import me.dodo.readingnotes.dto.reading.ReadingRecordItem;
 import me.dodo.readingnotes.dto.reading.ReadingRecordRequest;
 import me.dodo.readingnotes.dto.reading.ReadingRecordResponse;
-import me.dodo.readingnotes.external.KakaoBookClient;
+import me.dodo.readingnotes.external.client.KakaoBookClient;
 import me.dodo.readingnotes.repository.BookRepository;
 import me.dodo.readingnotes.repository.ReadingRecordRepository;
 import me.dodo.readingnotes.repository.UserRepository;
