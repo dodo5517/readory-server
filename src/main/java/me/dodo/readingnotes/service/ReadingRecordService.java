@@ -86,8 +86,8 @@ public class ReadingRecordService {
     }
     // 책 검색 후 매칭
     private void matchingBook(ReadingRecord record) {
-        // 기존 책 테이블에서 책 검색
-        List<Book> existingBooks = bookMatcherService.fetchCandidatesFromBookTable(record.getRawTitle(), record.getRawAuthor());
+        // 기존 책 테이블에서 책 검색 (최대 10개)
+        List<Book> existingBooks = bookMatcherService.fetchCandidatesFromBookTable(record.getRawTitle(), record.getRawAuthor(), 10);
         
         // 최종 선택된 책
         MatchResult result;

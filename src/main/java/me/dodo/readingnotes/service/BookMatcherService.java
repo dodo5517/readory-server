@@ -37,7 +37,7 @@ public class BookMatcherService {
     // 문자열 유사도 알고리즘
     private final JaroWinklerSimilarity sim = new JaroWinklerSimilarity();
 
-    public List<Book> fetchCandidatesFromBookTable(String rawTitle, String rawAuthor) {
+    public List<Book> fetchCandidatesFromBookTable(String rawTitle, String rawAuthor, int limit) {
         String nt = normTitle(rawTitle);
         String na = normAuthorField(rawAuthor);
 
@@ -59,7 +59,7 @@ public class BookMatcherService {
 
                     return titleSim > 0.6 || authorSim > 0.7;
                 })
-                .limit(10)  // 최대 10개로 제한
+                .limit(limit)  // 최대 10개로 제한
                 .collect(Collectors.toList());
     }
 
