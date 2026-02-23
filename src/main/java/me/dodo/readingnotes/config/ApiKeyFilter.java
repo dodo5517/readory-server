@@ -61,6 +61,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         request.setAttribute(ATTR_API_USER_ID, userOpt.get().getId());
+        request.setAttribute("apiUser", userOpt.get());
         chain.doFilter(request, response);
     }
 }

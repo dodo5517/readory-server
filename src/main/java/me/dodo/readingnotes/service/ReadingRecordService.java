@@ -61,11 +61,14 @@ public class ReadingRecordService {
         this.bookLinkService = bookLinkService;
     }
 
-    // 새로운 기록 생성
+    // 새로운 기록 생성 (User 객체를 Optional로 받아서 jwt, api 분리)
     @Transactional
-    public ReadingRecord createByUserId(Long userId, ReadingRecordRequest req) {
-        User user = userRepository.findById(userId)
+    public ReadingRecord createByUserId(Long userId, User userFromFilter, ReadingRecordRequest req) {
+        User user = userFromFilter != null
+                ? userFromFilter
+                : userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
+
         ReadingRecord record = new ReadingRecord();
         record.setUser(user);
         record.setSentence(req.getSentence());
