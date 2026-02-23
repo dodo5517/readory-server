@@ -39,7 +39,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(8);
     }
 
     @Bean
@@ -88,10 +88,10 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // API Key 필터, /records 로 시작하는 경로에만 적용함.
+        // API Key 필터, /api/records 로 시작하는 경로에만 적용함.
         ApiKeyFilter apiKeyFilter = new ApiKeyFilter(
                 userRepository,
-                "/records"
+                "/api/records"
         );
 
         http.addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class);
