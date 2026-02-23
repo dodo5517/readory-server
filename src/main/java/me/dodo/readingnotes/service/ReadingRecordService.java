@@ -120,48 +120,19 @@ public class ReadingRecordService {
                 log.info("기존 책 테이블에서 매칭 성공: {} (score: {})",
                         result.getBest().getTitle(),
                         result.getScore());
+                if (result.getBest() != null && result.isAutoMatch()) {
+                    saveMatchResult(record, result); // 매칭 저장
+                }
+                return;
             }
 
             log.info("기존 책 중 확실한 매칭 없음. 외부 API 검색 진행...");
-        } else {
-            // Kakao 검색
-            List<BookCandidate> candidates = kakaoBookClient.search(record.getRawTitle(), record.getRawAuthor(), 10);
-
-            // BookMatcher로 베스트 선택
-            result = bookMatcherService.pickBest(record.getRawTitle(), record.getRawAuthor(), candidates);
         }
-
-        // 자동 확정이면 저장 진입점으로 위임
-        if (result.getBest() != null && result.isAutoMatch()) {
-            //검색결과 DTO → 저장 명령 DTO 변환
-            LinkBookRequest reqDto = LinkBookRequest.fromCandidate(result.getBest());
-
-            // 스냅샷(근거 데이터) JSON 구성
-            Map<String, Object> snapshot = Map.of(
-                    "provider", reqDto.getSource(), // "KAKAO"
-                    "score", result.getScore(),
-                    "query", Map.of("title", record.getRawTitle(), "author", record.getRawAuthor()),
-                    "candidate", Map.of(
-                            "title", result.getBest().getTitle(),
-                            "author", result.getBest().getAuthor(),
-                            "isbn10", result.getBest().getIsbn10(),
-                            "isbn13", result.getBest().getIsbn13(),
-                            "publisher", result.getBest().getPublisher(),
-                            "publishedDate", result.getBest().getPublishedDate() == null ? null : result.getBest().getPublishedDate().toString(),
-                            "thumbnailUrl", result.getBest().getThumbnailUrl(),
-                            "externalId", result.getBest().getExternalId()
-                    ),
-                    "matcher", Map.of(
-                            "threshold", 0.88,
-                            "weights", Map.of("title", 0.7, "author", 0.3),
-                            "version", "2025-08-18"
-                    )
-            );
-            String snapshotJson = toJsonSafe(snapshot); // 아래 유틸 참고
-
-            // Book/Link/Record 한 번에 처리
-            bookLinkService.linkRecordAuto(record.getId(), reqDto, result.getScore(), snapshotJson);
-        }
+        // Kakao 검색
+        List<BookCandidate> candidates = kakaoBookClient.search(record.getRawTitle(), record.getRawAuthor(), 10);
+        // BookMatcher로 베스트 선택
+        result = bookMatcherService.pickBest(record.getRawTitle(), record.getRawAuthor(), candidates);
+        saveMatchResult(record, result); // 매칭 저장
     }
     private boolean present(String s) { return s != null && !s.isBlank(); }
     // 간단 버전: 필요시 Jackson 빈 주입으로 교체(아래 참고)
@@ -171,6 +142,35 @@ public class ReadingRecordService {
         } catch (Exception e) {
             return null;
         }
+    }
+    // 매칭 저장 메서드
+    private void saveMatchResult(ReadingRecord record, MatchResult result) {
+        if (result.getBest() == null || !result.isAutoMatch()) return;
+        //검색결과 DTO → 저장 명령 DTO 변환
+        LinkBookRequest reqDto = LinkBookRequest.fromCandidate(result.getBest());
+        // 스냅샷(근거 데이터) JSON 구성
+        Map<String, Object> snapshot = Map.of(
+                "provider", reqDto.getSource(),
+                "score", result.getScore(),
+                "query", Map.of("title", record.getRawTitle(), "author", record.getRawAuthor()),
+                "candidate", Map.of(
+                        "title", result.getBest().getTitle(),
+                        "author", result.getBest().getAuthor(),
+                        "isbn10", result.getBest().getIsbn10(),
+                        "isbn13", result.getBest().getIsbn13(),
+                        "publisher", result.getBest().getPublisher(),
+                        "publishedDate", result.getBest().getPublishedDate() == null ? null : result.getBest().getPublishedDate().toString(),
+                        "thumbnailUrl", result.getBest().getThumbnailUrl(),
+                        "externalId", result.getBest().getExternalId()
+                ),
+                "matcher", Map.of(
+                        "threshold", 0.88,
+                        "weights", Map.of("title", 0.7, "author", 0.3),
+                        "version", "2025-08-18"
+                )
+        );
+
+        bookLinkService.linkRecordAuto(record.getId(), reqDto, result.getScore(), toJsonSafe(snapshot));
     }
 
     // 해당 유저의 최신 N개 기록 조회
