@@ -151,7 +151,10 @@ public class ReadingRecordController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
         }
 
-        return calendarService.getMonthly(userId, year, month);
+        if (month == 0) {
+            return calendarService.getYearly(userId, year);   // 연간 히트맵용
+        }
+        return calendarService.getMonthly(userId, year, month); // 월간 달력용
     }
 
     // 월 기록 목록 조회

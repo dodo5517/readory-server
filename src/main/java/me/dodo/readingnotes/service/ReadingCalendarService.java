@@ -25,19 +25,27 @@ public class ReadingCalendarService {
         this.repo = repo;
     }
 
-    // 한 달 동안 기록한 날짜 조회
+    // 한 달 동안 기록한 날짜 조회(월간 달력용)
     public CalendarResponse getMonthly(Long userId, int year, int month) {
         YearMonth ym = YearMonth.of(year, month);
-
-        // 그 달의 첫째 날
         LocalDate startDate = ym.atDay(1);
-        // 그 달의 마지막 날
-        LocalDate endDate = ym.plusMonths(1).atDay(1);
+        LocalDate endDate = ym.atEndOfMonth();
+        return buildResponse(userId, startDate, endDate);
+    }
 
-        // time도 붙임
+    // 연간 기록한 날짜 조회(연간 히트맵용)
+    public CalendarResponse getYearly(Long userId, int year) {
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.of(year, 12, 31);
+        return buildResponse(userId, startDate, endDate);
+    }
+
+    // 공통 로직 분리
+    private CalendarResponse buildResponse(Long userId, LocalDate startDate, LocalDate endDate) {
+        // 그 달의 첫째 날
         LocalDateTime start = startDate.atStartOfDay();
-        LocalDateTime end   = endDate.plusDays(1).atStartOfDay();
-
+        // 그 달의 마지막 날
+        LocalDateTime end = endDate.plusDays(1).atStartOfDay();
         List<DayCountRow> rows = repo.countByDayInRange(userId, start, end);
 
         List<DayStat> days = new ArrayList<>();

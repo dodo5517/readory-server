@@ -27,7 +27,7 @@ dependencies {
 //    runtimeOnly 'com.h2database:h2'
 
 //    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'              // SQLite JDBC
-    implementation 'org.hibernate.orm:hibernate-community-dialects:6.5.2.Final' // SQLite Dialect
+//    implementation 'org.hibernate.orm:hibernate-community-dialects:6.5.2.Final' // SQLite Dialect
 
     runtimeOnly 'org.postgresql:postgresql' // postgreSQL
 
