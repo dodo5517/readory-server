@@ -3,6 +3,7 @@ package me.dodo.readingnotes.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import me.dodo.readingnotes.config.ApiKeyFilter;
 import me.dodo.readingnotes.domain.ReadingRecord;
+import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.dto.book.BookRecordsPageResponse;
 import me.dodo.readingnotes.dto.book.BookWithLastRecordResponse;
 import me.dodo.readingnotes.dto.calendar.CalendarResponse;
@@ -44,12 +45,10 @@ public class ReadingRecordController {
     @PostMapping
     public ResponseEntity<String> create(HttpServletRequest request,
                                        @RequestBody ReadingRecordRequest req) {
+        User user = (User) request.getAttribute("apiUser");
         Long userId = (Long) request.getAttribute(ApiKeyFilter.ATTR_API_USER_ID);
-        if (userId == null) {
-            return ResponseEntity.status(401).build(); // 필터가 보통 막지만 방어
-        }
 //        log.debug("Create Record, userID={}", userId);
-        ReadingRecord saved = service.createByUserId(userId, req);
+        ReadingRecord saved = service.createByUserId(userId, user, req);
         return ResponseEntity.ok("문장: "+saved.getSentence()+"\n메모: "+saved.getComment()+"\n"+"기록을 저장했습니다.");
     }
 
@@ -62,7 +61,7 @@ public class ReadingRecordController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
         }
 //        log.debug("Create Record, userID={}", userId);
-        service.createByUserId(userId, req);
+        service.createByUserId(userId, null, req);
         // 상태코드만 반환 (204)
         return ResponseEntity.noContent().build();
     }

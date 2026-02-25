@@ -7,9 +7,13 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.repository.UserRepository;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 public class ApiKeyFilter extends OncePerRequestFilter {
@@ -50,7 +54,14 @@ public class ApiKeyFilter extends OncePerRequestFilter {
             return;
         }
 
+        // SecurityContext에 인증 정보 set
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(userOpt.get(), null, List.of(new SimpleGrantedAuthority(userOpt.get().getRole())));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
         request.setAttribute(ATTR_API_USER_ID, userOpt.get().getId());
+        request.setAttribute("apiUser", userOpt.get());
         chain.doFilter(request, response);
     }
 }
