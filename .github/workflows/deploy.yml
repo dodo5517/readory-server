@@ -1,0 +1,45 @@
+name: Deploy to Raspberry Pi
+
+on:
+  push:
+    branches: [ main ]
+
+# job은 github 클라우드에서 하는 것임.
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout # 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 # Java 설치
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew # gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
+      - name: Build bootJar # Spring Boot 빌드
+        run: ./gradlew bootJar
+
+      - name: Setup SSH Key # SSH 키 설정
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload JAR # JAR 업로드(JAR 배포는 같은 이름의 파일 하나 교체라서 삭제가 필요 없음)
+        run: |
+          scp -i ~/.ssh/deploy_key -P ${{ secrets.SSH_PORT }} \
+            build/libs/*.jar \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/dodo/apps/readory/reading-notes-0.0.1-SNAPSHOT.jar
+
+      - name: Restart Service # 서비스 재시작
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "sudo systemctl restart readory"
