@@ -5,6 +5,7 @@ import me.dodo.readingnotes.dto.book.BookWithLastRecordResponse;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -233,6 +234,14 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                                            @Param("end") LocalDateTime end,
                                            @Param("q") String q,
                                            Pageable pageable);
+
+    // 책에 대한 기록 존재
+    boolean existsByBook_IdAndUser_Id(Long bookId, Long userId);
+    
+    // 해당 책의 모든 기록 삭제
+    @Modifying
+    @Query("DELETE FROM ReadingRecord r WHERE r.book.id = :bookId AND r.user.id = :userId")
+    void deleteAllByBookIdAndUserId(@Param("bookId") Long bookId, @Param("userId") Long userId);
 
     // ##############################
     // 관리자 전용 메서드

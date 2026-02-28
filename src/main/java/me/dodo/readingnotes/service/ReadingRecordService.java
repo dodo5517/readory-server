@@ -208,6 +208,7 @@ public class ReadingRecordService {
     }
 
     // 기록 수정
+    @Transactional
     public ReadingRecordResponse update(Long recordId, Long userId, ReadingRecordRequest request) {
         Optional<ReadingRecord> recordOpt = readingRecordRepository.findByIdAndUserId(recordId, userId);
         if (recordOpt.isEmpty()) {
@@ -245,12 +246,26 @@ public class ReadingRecordService {
     }
 
     // 기록 삭제
+    @Transactional
     public void deleteRecordById(Long recordId, Long userId) {
         // 삭제하려는 행의 존재 여부 확인
         ReadingRecord record = readingRecordRepository.findByIdAndUserId(recordId, userId)
                 .orElseThrow(()-> new IllegalArgumentException("해당 유저의 해당 레코드가 존재하지 않습니다: "+ userId +"의"+ recordId));
         // 삭제
         readingRecordRepository.delete(record);
+    }
+
+    // 해당 책의 모든 기록 삭제
+    @Transactional
+    public void deleteAllRecord(Long bookId, Long userId) {
+        // 삭제할 기록의 존재 여부 확인
+        boolean exists = readingRecordRepository.existsByBook_IdAndUser_Id(bookId, userId);
+        if (!exists) {
+            throw new IllegalArgumentException("해당 유저의 해당 책 기록이 존재하지 않습니다: " + userId + "의 " + bookId);
+        }
+
+        // 삭제
+        readingRecordRepository.deleteAllByBookIdAndUserId(bookId, userId);
     }
 
 

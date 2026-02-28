@@ -233,4 +233,18 @@ public class ReadingRecordController {
 
         service.deleteRecordById(recordId, userId);
     }
+
+    // 해당 책의 모든 기록 삭제
+    @DeleteMapping("/delete/books/{bookId}")
+    public void deleteAllRecord(
+            @PathVariable Long bookId,
+            HttpServletRequest request){
+        // JwtAuthFilter가 심어준 값 사용
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
+
+        service.deleteAllRecord(bookId, userId);
+    }
 }
