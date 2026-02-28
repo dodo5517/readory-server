@@ -1,0 +1,29 @@
+name: Test Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout # 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 # Java 설치
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew # gradlew 실행 권한 부여
+        run: chmod +x gradlew
+
+      - name: Build bootJar # Spring Boot 빌드
+        run: ./gradlew bootJar
+
+      - name: Check build output
+        run: |
+          echo "빌드 결과물 확인:"
+          ls -la build/libs/
