@@ -21,10 +21,6 @@ public class AdminRecordDetailResponse {
     private String rawTitle;
     private String rawAuthor;
 
-    // 기록 내용
-    private String sentence;
-    private String comment;
-
     // 상태 및 시간
     private ReadingRecord.MatchStatus matchStatus;
     private LocalDateTime recordedAt;
@@ -51,10 +47,6 @@ public class AdminRecordDetailResponse {
         this.rawTitle = record.getRawTitle();
         this.rawAuthor = record.getRawAuthor();
 
-        // 기록 내용
-        this.sentence = record.getSentence();
-        this.comment = record.getComment();
-
         // 상태 및 시간
         this.matchStatus = record.getMatchStatus();
         this.recordedAt = record.getRecordedAt();
@@ -73,8 +65,6 @@ public class AdminRecordDetailResponse {
     public String getBookCoverUrl() { return bookCoverUrl; }
     public String getRawTitle() { return rawTitle; }
     public String getRawAuthor() { return rawAuthor; }
-    public String getSentence() { return sentence; }
-    public String getComment() { return comment; }
     public ReadingRecord.MatchStatus getMatchStatus() { return matchStatus; }
     public LocalDateTime getRecordedAt() { return recordedAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

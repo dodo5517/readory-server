@@ -1,6 +1,7 @@
 package me.dodo.readingnotes.repository;
 
 import me.dodo.readingnotes.domain.ReadingRecord;
+import me.dodo.readingnotes.dto.admin.AdminUserActivityResponse;
 import me.dodo.readingnotes.dto.book.BookWithLastRecordResponse;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -247,26 +248,55 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     // 관리자 전용 메서드
     // ##############################
 
-    // 관리자용: 전체 기록 조회 (검색 + 필터링)
+    // 기록 목록 조회 - userId 필수: 전체 목록 열람 차단/ 검색 대상: 제목, 저자, 유저명만 (감상/메모 제외)
     @Query("SELECT r FROM ReadingRecord r " +
             "JOIN FETCH r.user " +
             "LEFT JOIN FETCH r.book " +
-            "WHERE (:keyword IS NULL OR " +
+            "WHERE r.user.id = :userId " +
+            "AND (:keyword IS NULL OR " +
             "       LOWER(r.rawTitle) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
-            "       LOWER(r.rawAuthor) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
-            "       LOWER(r.sentence) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR " +
-            "       LOWER(r.user.username) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
-            "AND (:matchStatus IS NULL OR r.matchStatus = :matchStatus) " +
-            "AND (:userId IS NULL OR r.user.id = :userId)")
-    Page<ReadingRecord> findAllForAdmin(@Param("keyword") String keyword,
-                                        @Param("matchStatus") ReadingRecord.MatchStatus matchStatus,
-                                        @Param("userId") Long userId,
-                                        Pageable pageable);
+            "       LOWER(r.rawAuthor) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
+            "AND (:matchStatus IS NULL OR r.matchStatus = :matchStatus)")
+    Page<ReadingRecord> findAllForAdmin(
+            @Param("keyword") String keyword,
+            @Param("matchStatus") ReadingRecord.MatchStatus matchStatus,
+            @Param("userId") Long userId,
+            Pageable pageable);
 
-    // 관리자용: ID로 기록 조회 (연관 엔티티 함께)
+    // 기록 상세 조회
     @Query("SELECT r FROM ReadingRecord r " +
             "JOIN FETCH r.user " +
             "LEFT JOIN FETCH r.book " +
             "WHERE r.id = :id")
     Optional<ReadingRecord> findByIdForAdmin(@Param("id") Long id);
+
+    // ── 통계 쿼리 ─────────────────────────────────────────────
+
+    // 매칭 상태별 집계
+    @Query("SELECT r.matchStatus, COUNT(r) FROM ReadingRecord r GROUP BY r.matchStatus")
+    List<Object[]> countByMatchStatus();
+
+    // 특정 기간 내 일별 기록 수
+    @Query("SELECT CAST(r.recordedAt AS date), COUNT(r) " +
+            "FROM ReadingRecord r " +
+            "WHERE r.recordedAt >= :from " +
+            "GROUP BY CAST(r.recordedAt AS date) " +
+            "ORDER BY CAST(r.recordedAt AS date)")
+    List<Object[]> countDailyFrom(@Param("from") LocalDateTime from);
+
+    // 특정 기간 내 활성 유저 수 (개인 식별 없이 집계만)
+    @Query("SELECT COUNT(DISTINCT r.user.id) FROM ReadingRecord r WHERE r.recordedAt >= :from")
+    long countDistinctActiveUsersFrom(@Param("from") LocalDateTime from);
+
+    // 유저 활동 현황 목록 - 민원 대응 및 활성 유저 파악용 기록 내용은 포함하지 않음
+    @Query("SELECT new me.dodo.readingnotes.dto.admin.AdminUserActivityResponse(" +
+            "  r.user.id, r.user.username, r.user.email, COUNT(r), MAX(r.recordedAt)) " +
+            "FROM ReadingRecord r " +
+            "GROUP BY r.user.id, r.user.username, r.user.email " +
+            "ORDER BY MAX(r.recordedAt) DESC")
+    Page<AdminUserActivityResponse> findUserActivityForAdmin(Pageable pageable);
+
+    // 오늘 기록 수
+    @Query("SELECT COUNT(r) FROM ReadingRecord r WHERE r.recordedAt >= :startOfDay")
+    long countTodayRecords(@Param("startOfDay") LocalDateTime startOfDay);
 }

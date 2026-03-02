@@ -4,9 +4,7 @@ import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.domain.User;
-import me.dodo.readingnotes.dto.admin.AdminRecordDetailResponse;
-import me.dodo.readingnotes.dto.admin.AdminRecordListResponse;
-import me.dodo.readingnotes.dto.admin.AdminRecordUpdateRequest;
+import me.dodo.readingnotes.dto.admin.*;
 import me.dodo.readingnotes.dto.book.*;
 import me.dodo.readingnotes.dto.reading.ReadingRecordItem;
 import me.dodo.readingnotes.dto.reading.ReadingRecordRequest;
@@ -27,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ReadingRecordService {
@@ -273,22 +273,78 @@ public class ReadingRecordService {
     // 관리자 전용 메서드
     // ##############################
 
-    // 관리자용: 전체 기록 목록 조회 (검색 + 필터링)
+    //  특정 유저의 기록 목록 조회 (민원 대응용) userId 필수 - 전체 목록 열람 불가
     @Transactional(readOnly = true)
-    public Page<AdminRecordListResponse> findAllRecordsForAdmin(String keyword,
-                                                                ReadingRecord.MatchStatus matchStatus,
-                                                                Long userId,
-                                                                Pageable pageable) {
-        return readingRecordRepository.findAllForAdmin(keyword, matchStatus, userId, pageable)
+    public Page<AdminRecordListResponse> findRecordsByUserForAdmin(
+            String keyword,
+            ReadingRecord.MatchStatus matchStatus,
+            Long userId,
+            Pageable pageable) {
+
+        return readingRecordRepository
+                .findAllForAdmin(keyword, matchStatus, userId, pageable)
                 .map(AdminRecordListResponse::new);
     }
 
-    // 관리자용: 특정 기록 상세 조회
+    // 특정 기록 상세 조회 sentence, comment는 응답에 포함되지 않음
     @Transactional(readOnly = true)
     public AdminRecordDetailResponse findRecordByIdForAdmin(Long id) {
         ReadingRecord record = readingRecordRepository.findByIdForAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 기록을 찾을 수 없습니다. id=" + id));
         return new AdminRecordDetailResponse(record);
+    }
+
+    // 통계 조회 개인 식별 없이 집계 데이터만 반환
+    @Transactional(readOnly = true)
+    public AdminRecordStatsResponse getStatsForAdmin() {
+        long totalRecords = readingRecordRepository.count();
+
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        long todayRecords = readingRecordRepository.countTodayRecords(startOfToday);
+
+        // 매칭 상태별 집계
+        List<Object[]> statusCounts = readingRecordRepository.countByMatchStatus();
+        Map<String, Long> statusMap = statusCounts.stream()
+                .collect(Collectors.toMap(
+                        row -> ((ReadingRecord.MatchStatus) row[0]).name(),
+                        row -> (Long) row[1]
+                ));
+
+        // 최근 30일 일별 기록 수
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        List<Object[]> dailyRaw = readingRecordRepository.countDailyFrom(thirtyDaysAgo);
+        List<AdminRecordStatsResponse.DailyCount> dailyCounts = dailyRaw.stream()
+                .map(row -> new AdminRecordStatsResponse.DailyCount(
+                        ((java.sql.Date) row[0]).toLocalDate(),
+                        (Long) row[1]
+                ))
+                .collect(Collectors.toList());
+
+        // 활성 유저 수
+        long activeUsersLast7Days = readingRecordRepository
+                .countDistinctActiveUsersFrom(thirtyDaysAgo);
+        long activeUsersLast30Days = readingRecordRepository
+                .countDistinctActiveUsersFrom(LocalDateTime.now().minusDays(30));
+
+        return new AdminRecordStatsResponse(
+                totalRecords,
+                todayRecords,
+                statusMap.getOrDefault("PENDING", 0L),
+                statusMap.getOrDefault("RESOLVED_AUTO", 0L),
+                statusMap.getOrDefault("RESOLVED_MANUAL", 0L),
+                statusMap.getOrDefault("NO_CANDIDATE", 0L),
+                statusMap.getOrDefault("MULTIPLE_CANDIDATES", 0L),
+                dailyCounts,
+                activeUsersLast7Days,
+                activeUsersLast30Days
+        );
+    }
+
+    // 유저 활동 현황 목록 - 기록 내용 없이 활동 시간, 기록 수만 포함
+    @Transactional(readOnly = true)
+    public Page<AdminUserActivityResponse> findUserActivityForAdmin(Pageable pageable) {
+        Pageable noSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return readingRecordRepository.findUserActivityForAdmin(noSort);
     }
 
     // 관리자용: 기록 수정 (userId 체크 없음)
@@ -318,7 +374,7 @@ public class ReadingRecordService {
         return new AdminRecordDetailResponse(saved);
     }
 
-    // 관리자용: 기록 삭제 (userId 체크 없음)
+    // 기록 삭제 (userId 체크 없음)
     @Transactional
     public void deleteRecordForAdmin(Long id) {
         ReadingRecord record = readingRecordRepository.findById(id)

@@ -8,7 +8,6 @@ public class AdminRecordListResponse {
     private String username;
     private String rawTitle;
     private String rawAuthor;
-    private String sentence;
     private ReadingRecord.MatchStatus matchStatus;
     private LocalDateTime recordedAt;
 
@@ -17,7 +16,6 @@ public class AdminRecordListResponse {
         this.username = record.getUser().getUsername();
         this.rawTitle = record.getRawTitle();
         this.rawAuthor = record.getRawAuthor();
-        this.sentence = truncate(record.getSentence(), 100);
         this.matchStatus = record.getMatchStatus();
         this.recordedAt = record.getRecordedAt();
     }
@@ -32,7 +30,6 @@ public class AdminRecordListResponse {
     public String getUsername() { return username; }
     public String getRawTitle() { return rawTitle; }
     public String getRawAuthor() { return rawAuthor; }
-    public String getSentence() { return sentence; }
     public ReadingRecord.MatchStatus getMatchStatus() { return matchStatus; }
     public LocalDateTime getRecordedAt() { return recordedAt; }
 }

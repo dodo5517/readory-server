@@ -70,10 +70,7 @@ public class AdminController {
                                                    @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
                                                    HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -87,10 +84,7 @@ public class AdminController {
     public AdminPageUserResponse getUser(@PathVariable Long id,
                                          HttpServletRequest request){
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -105,10 +99,7 @@ public class AdminController {
                                                @RequestBody @Valid UpdateUsernameRequest request,
                                                HttpServletRequest servletRequest){
         // adminId 추출
-        Long adminId = (Long) servletRequest.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(servletRequest);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -126,10 +117,7 @@ public class AdminController {
                                                @RequestBody @Valid UpdatePasswordAdminRequest request,
                                                HttpServletRequest servletRequest){
         // adminId 추출
-        Long adminId = (Long) servletRequest.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(servletRequest);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -146,10 +134,7 @@ public class AdminController {
     public String userReset(@PathVariable Long id, HttpServletRequest request,
                             HttpServletResponse httpResponse) throws Exception {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
         // 모든 기기에서 로그아웃
@@ -169,10 +154,7 @@ public class AdminController {
                                                      @RequestParam("image") MultipartFile image,
                                                      HttpServletRequest request) throws Exception {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -200,10 +182,7 @@ public class AdminController {
     public ResponseEntity<Void> deleteProfileImage(@PathVariable Long id,
                                                    HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
 
@@ -218,10 +197,7 @@ public class AdminController {
     public ResponseEntity<MaskedApiKeyResponse> reissueApiKey(@PathVariable Long id,
                                                               HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -235,10 +211,7 @@ public class AdminController {
     public ResponseEntity<ApiKeyResponse> getApiKey(@PathVariable Long id,
                                                     HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -252,10 +225,7 @@ public class AdminController {
     public Boolean deleteUser(@PathVariable Long id,
                               HttpServletRequest request){
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -269,10 +239,7 @@ public class AdminController {
                                                  @RequestBody ChangeUserStatusRequest request,
                                                  HttpServletRequest servletRequest){
         // adminId 추출
-        Long adminId = (Long) servletRequest.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(servletRequest);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -290,10 +257,7 @@ public class AdminController {
                                                @RequestBody String role,
                                                HttpServletRequest request){
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
 
@@ -309,10 +273,7 @@ public class AdminController {
     public ResponseEntity<Void> logoutUser(@PathVariable Long id,
                                            HttpServletRequest request){
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -338,10 +299,7 @@ public class AdminController {
             HttpServletRequest request
     ) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -355,10 +313,7 @@ public class AdminController {
     public AuthLogDetailResponse getLogDetail(@PathVariable Long id,
                                               HttpServletRequest request){
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
 
@@ -381,8 +336,7 @@ public class AdminController {
             HttpServletRequest request
     ) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) throw new IllegalArgumentException("userId가 없습니다.");
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -395,8 +349,7 @@ public class AdminController {
     public ApiLogDetailResponse getApiLogDetail(@PathVariable Long id,
                                                 HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) throw new IllegalArgumentException("userId가 없습니다.");
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -417,10 +370,7 @@ public class AdminController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -434,10 +384,7 @@ public class AdminController {
     public BookDetailResponse getBook(@PathVariable Long id,
                                       HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -451,10 +398,7 @@ public class AdminController {
     public ResponseEntity<Void> softDeleteBook(@PathVariable Long id,
                                                HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -470,10 +414,7 @@ public class AdminController {
     public ResponseEntity<Void> hardDeleteBook(@PathVariable Long id,
                                                HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -489,10 +430,7 @@ public class AdminController {
     public ResponseEntity<Void> restoreBook(@PathVariable Long id,
                                             HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -507,41 +445,51 @@ public class AdminController {
     // 독서 기록 관리
     // ##############################
 
-    // 전체 기록 목록 조회
+    // 특정 유저의 기록 목록 조회 (민원 대응용) userId 필수 - 전체 열람 차단
     @GetMapping("/records")
-    public Page<AdminRecordListResponse> getAllRecords(
+    public Page<AdminRecordListResponse> getRecordsByUser(
+            @RequestParam Long userId,   // required=true (기본값)
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ReadingRecord.MatchStatus matchStatus,
-            @RequestParam(required = false) Long userId,
             @PageableDefault(size = 20, sort = "recordedAt", direction = Sort.Direction.DESC) Pageable pageable,
             HttpServletRequest request) {
-        // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
 
-        // 관리자 권한 있는지 확인
+        Long adminId = extractAdminId(request);
         userService.assertAdmin(adminId);
 
-        // 기록 목록 조회
-        return readingRecordService.findAllRecordsForAdmin(keyword, matchStatus, userId, pageable);
+        return readingRecordService.findRecordsByUserForAdmin(keyword, matchStatus, userId, pageable);
     }
 
-    // 특정 기록 상세 조회
-    @GetMapping("/records/{id}")
-    public AdminRecordDetailResponse getRecord(@PathVariable Long id,
-                                               HttpServletRequest request) {
-        // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
-
-        // 관리자 권한 있는지 확인
+    // 통계 조회 - 개인 식별 없는 집계 데이터
+    @GetMapping("/records/stats")
+    public AdminRecordStatsResponse getStats(HttpServletRequest request) {
+        Long adminId = extractAdminId(request);
         userService.assertAdmin(adminId);
 
-        // 기록 상세 조회
+        return readingRecordService.getStatsForAdmin();
+    }
+
+    // 유저 활동 현황 - 활성 유저 파악용기록 내용 없이 활동 시간, 기록 수만 포함
+    @GetMapping("/records/user-activity")
+    public Page<AdminUserActivityResponse> getUserActivity(
+            @PageableDefault(size = 20, sort = "lastRecordedAt", direction = Sort.Direction.DESC) Pageable pageable,
+            HttpServletRequest request) {
+
+        Long adminId = extractAdminId(request);
+        userService.assertAdmin(adminId);
+
+        return readingRecordService.findUserActivityForAdmin(pageable);
+    }
+
+    // 특정 기록 상세 조회 (민원 대응용) sentence, comment는 응답에 포함되지 않음
+    @GetMapping("/records/{id}")
+    public AdminRecordDetailResponse getRecord(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+
+        Long adminId = extractAdminId(request);
+        userService.assertAdmin(adminId);
+
         return readingRecordService.findRecordByIdForAdmin(id);
     }
 
@@ -551,10 +499,7 @@ public class AdminController {
                                                   @RequestBody AdminRecordUpdateRequest updateRequest,
                                                   HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -568,10 +513,7 @@ public class AdminController {
     public ResponseEntity<Void> deleteRecord(@PathVariable Long id,
                                              HttpServletRequest request) {
         // adminId 추출
-        Long adminId = (Long) request.getAttribute("USER_ID");
-        if (adminId == null) {
-            throw new IllegalArgumentException("userId가 없습니다.");
-        }
+        Long adminId = extractAdminId(request);
 
         // 관리자 권한 있는지 확인
         userService.assertAdmin(adminId);
@@ -580,6 +522,14 @@ public class AdminController {
         readingRecordService.deleteRecordForAdmin(id);
 
         return ResponseEntity.noContent().build();
+    }
+
+    private Long extractAdminId(HttpServletRequest request) {
+        Long adminId = (Long) request.getAttribute("USER_ID");
+        if (adminId == null) {
+            throw new IllegalArgumentException("userId가 없습니다.");
+        }
+        return adminId;
     }
 
 }
