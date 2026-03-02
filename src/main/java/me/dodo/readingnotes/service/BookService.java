@@ -1,8 +1,10 @@
 package me.dodo.readingnotes.service;
 
 import me.dodo.readingnotes.domain.Book;
+import me.dodo.readingnotes.dto.admin.AdminBookStatsResponse;
 import me.dodo.readingnotes.dto.admin.BookDetailResponse;
 import me.dodo.readingnotes.dto.admin.BookListResponse;
+import me.dodo.readingnotes.dto.admin.TopBook;
 import me.dodo.readingnotes.repository.BookRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class BookService {
@@ -75,5 +78,13 @@ public class BookService {
         if (v == null) return null;
         String t = v.trim();
         return t.isEmpty() ? null : t;
+    }
+
+    // 관리자용 책 통계
+    @Transactional(readOnly = true)
+    public AdminBookStatsResponse getBookStatsForAdmin() {
+        List<TopBook> top =
+                bookRepository.findTopBooksByRecordCount();
+        return new AdminBookStatsResponse(top);
     }
 }

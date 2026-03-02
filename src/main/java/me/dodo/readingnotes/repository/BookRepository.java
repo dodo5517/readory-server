@@ -1,6 +1,8 @@
 package me.dodo.readingnotes.repository;
 
 import me.dodo.readingnotes.domain.Book;
+import me.dodo.readingnotes.dto.admin.AdminBookStatsResponse;
+import me.dodo.readingnotes.dto.admin.TopBook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,6 +37,15 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     Page<Book> findAllForAdmin(@Param("keyword") String keyword,
                                @Param("includeDeleted") Boolean includeDeleted,
                                Pageable pageable);
+    // 관리자용 책 통계
+    @Query("SELECT new me.dodo.readingnotes.dto.admin.TopBook(" +
+            "  r.book.id, r.book.title, r.book.author, r.book.coverUrl, COUNT(DISTINCT r.user.id)) " +
+            "FROM ReadingRecord r " +
+            "WHERE r.book IS NOT NULL " +
+            "GROUP BY r.book.id, r.book.title, r.book.author, r.book.coverUrl " +
+            "ORDER BY COUNT(DISTINCT r.user.id) DESC " +
+            "LIMIT 10")
+    List<TopBook> findTopBooksByRecordCount();
 
     // 책 테이블에서 유사한 후보 추출
     @Query("SELECT b FROM Book b WHERE " +

@@ -441,6 +441,14 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
+    // 책 통계
+    @GetMapping("/records/stats/books")
+    public AdminBookStatsResponse getBookStats(HttpServletRequest request) {
+        Long adminId = extractAdminId(request);
+        userService.assertAdmin(adminId);
+        return bookService.getBookStatsForAdmin();
+    }
+
     // ##############################
     // 독서 기록 관리
     // ##############################
