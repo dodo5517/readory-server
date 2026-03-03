@@ -3,6 +3,8 @@ name: Deploy to Raspberry Pi
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md' # .md 파일은 무시
 
 # job은 github 클라우드에서 하는 것임.
 jobs:
