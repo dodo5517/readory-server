@@ -112,7 +112,7 @@ public class UserService {
 
     }
     private String extractKeyFromUrl(String imageUrl) {
-        return imageUrl.substring(imageUrl.lastIndexOf("profiles/"));
+        return imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
     }
 
     // 유저 이름 수정
