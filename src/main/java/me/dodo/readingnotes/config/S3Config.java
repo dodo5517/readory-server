@@ -8,6 +8,8 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
+import java.net.URI;
+
 @Configuration
 public class S3Config {
 
@@ -20,15 +22,20 @@ public class S3Config {
     @Value("${supabase.storage.secret-key}")
     private String secretKey;
 
+    @Value("${supabase.storage.url}")
+    private String url;
+
     @Bean
     public S3Client s3Client() {
         return S3Client.builder()
+                .endpointOverride(URI.create(url))
                 .region(Region.of(region))
                 .credentialsProvider(
                         StaticCredentialsProvider.create(
                                 AwsBasicCredentials.create(accessKey, secretKey)
                         )
                 )
+                .forcePathStyle(true)
                 .build();
     }
 }

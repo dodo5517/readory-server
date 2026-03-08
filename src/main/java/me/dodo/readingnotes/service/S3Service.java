@@ -13,8 +13,11 @@ import java.io.IOException;
 public class S3Service {
     private final S3Client s3Client;
 
-    @Value("${supabase.storage.url}")
-    private String baseUrl;
+//    @Value("${supabase.storage.url}")
+//    private String baseUrl;
+
+    @Value("${supabase.storage.public-url}")
+    private String publicUrl;
 
     @Value("${supabase.storage.bucket}")
     private String bucket;
@@ -37,7 +40,8 @@ public class S3Service {
         return getPublicUrl(fileName);
     }
     private String getPublicUrl(String fileName) {
-        return baseUrl + "/" + bucket + "/" + fileName;
+        // supabase.storage.url과 별도로 public URL용 base를 따로 쓰거나
+        return publicUrl + "/" + bucket + "/" + fileName;
     }
 
     // 사진 삭제
