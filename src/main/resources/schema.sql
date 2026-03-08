@@ -318,3 +318,14 @@ CREATE INDEX IF NOT EXISTS idx_api_logs_created_at ON api_logs (created_at);
 CREATE INDEX IF NOT EXISTS idx_api_logs_user_id     ON api_logs (user_id);
 CREATE INDEX IF NOT EXISTS idx_api_logs_result      ON api_logs (result);
 CREATE INDEX IF NOT EXISTS idx_api_logs_path        ON api_logs (path);
+
+-- =========================
+-- Table: notices
+-- =========================
+CREATE TABLE IF NOT EXISTS notices (
+    id         BIGSERIAL PRIMARY KEY,
+    message    VARCHAR(500) NOT NULL,
+    enabled    BOOLEAN      NOT NULL DEFAULT false,
+    created_at TIMESTAMP    NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP    NOT NULL DEFAULT now()
+);
