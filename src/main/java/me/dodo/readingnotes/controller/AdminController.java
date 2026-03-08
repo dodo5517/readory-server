@@ -14,6 +14,8 @@ import me.dodo.readingnotes.dto.log.ApiLogDetailResponse;
 import me.dodo.readingnotes.dto.log.ApiLogListResponse;
 import me.dodo.readingnotes.dto.log.AuthLogDetailResponse;
 import me.dodo.readingnotes.dto.log.AuthLogListResponse;
+import me.dodo.readingnotes.dto.notice.NoticeResponse;
+import me.dodo.readingnotes.dto.notice.NoticeUpdateRequest;
 import me.dodo.readingnotes.dto.user.*;
 import me.dodo.readingnotes.service.*;
 import me.dodo.readingnotes.util.CookieUtil;
@@ -30,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -41,6 +44,7 @@ public class AdminController {
     private LogService logService;
     private BookService bookService;
     private ReadingRecordService readingRecordService;
+    private NoticeService noticeService;
     private ImageResizer imageResizer;
 
     public AdminController(UserService userService,
@@ -48,6 +52,7 @@ public class AdminController {
                            LogService logService,
                            BookService bookService,
                            ReadingRecordService readingRecordService,
+                           NoticeService noticeService,
                            ImageResizer imageResizer) {
         this.userService = userService;
         this.s3Service = s3Service;
@@ -55,6 +60,7 @@ public class AdminController {
         this.logService = logService;
         this.bookService = bookService;
         this.readingRecordService = readingRecordService;
+        this.noticeService = noticeService;
         this.imageResizer = imageResizer;
     }
 
@@ -530,6 +536,51 @@ public class AdminController {
         readingRecordService.deleteRecordForAdmin(id);
 
         return ResponseEntity.noContent().build();
+    }
+
+    // ##############################
+    // 공지 관리
+    // ##############################
+
+    // 공지 이력 전체 조회
+    @GetMapping("/notices")
+    public ResponseEntity<List<NoticeResponse>> getAllNotices(HttpServletRequest request) {
+        Long adminId = extractAdminId(request);
+        userService.assertAdmin(adminId);
+        return ResponseEntity.ok(noticeService.getAllNotices());
+    }
+
+    // 공지 조회 (현재 활성 or 최근)
+    public ResponseEntity<NoticeResponse> getNotice(HttpServletRequest request) {
+        Long adminId = extractAdminId(request);
+        userService.assertAdmin(adminId);
+
+        NoticeResponse notice = noticeService.getNoticeForAdmin();
+        if (notice == null) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(notice);
+    }
+
+    // 새 공지 추가 (이전 공지 자동 비활성화)
+    @PostMapping("/notice")
+    public ResponseEntity<NoticeResponse> createNotice(
+            HttpServletRequest request,
+            @RequestBody NoticeUpdateRequest body) {
+        Long adminId = extractAdminId(request);
+        userService.assertAdmin(adminId);
+
+        return ResponseEntity.ok(noticeService.createNotice(body));
+    }
+
+    // 기존 공지 수정 (enabled 토글 등)
+    @PatchMapping("/notice/{id}")
+    public ResponseEntity<NoticeResponse> updateNotice(
+            HttpServletRequest request,
+            @PathVariable Long id,
+            @RequestBody NoticeUpdateRequest body) {
+        Long adminId = extractAdminId(request);
+        userService.assertAdmin(adminId);
+
+        return ResponseEntity.ok(noticeService.updateNotice(id, body));
     }
 
     private Long extractAdminId(HttpServletRequest request) {
