@@ -1,8 +1,10 @@
 # Readory 서버
 
-## DB 연결
-MCP postgres 서버를 사용한다. 별도 설치나 psql 없이 MCP 도구로 직접 쿼리한다.
-psql, node, curl 등으로 직접 연결 시도하지 않는다.
+## Supabase 연결
+- Project: Readory
+- Project ref: ipvelrsgczyyalxcujdr
+- MCP postgres 서버를 사용한다. 별도 설치나 psql 없이 MCP 도구로 직접 쿼리한다.
+- psql, node, curl 등으로 직접 연결 시도하지 않는다.
 
 ## 출처 패턴 분석
 
