@@ -40,3 +40,10 @@ out/
 application-oauth.properties
 application-private.properties
 application-book.properties
+
+package-lock.json
+node_modules/
+
+.env
+
+.claude/settings.local.json
