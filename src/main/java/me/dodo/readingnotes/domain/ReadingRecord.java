@@ -30,6 +30,9 @@ public class ReadingRecord {
 
     @Column(length = 1000)
     private String sentence;
+    // 출처 제거 전 원문 보관(nullable)
+    @Column(name = "sentence_original", nullable = true, length = 1000)
+    private String sentenceOriginal;
     @Column(length = 1000)
     private String comment;
 
@@ -102,6 +105,9 @@ public class ReadingRecord {
 
     public String getSentence() {return sentence;}
     public void setSentence(String sentence) { this.sentence = sentence; }
+    public String getSentenceOriginal() { return sentenceOriginal; }
+    public void setSentenceOriginal(String sentenceOriginal) { this.sentenceOriginal = sentenceOriginal; }
+
 
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }

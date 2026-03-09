@@ -134,6 +134,7 @@ CREATE TABLE IF NOT EXISTS reading_records (
     user_id       BIGINT NOT NULL,
 
     sentence      VARCHAR(1000),
+    sentence_original      VARCHAR(1000),
     comment       VARCHAR(1000),
 
     raw_title     VARCHAR(255),
