@@ -9,9 +9,11 @@ import me.dodo.readingnotes.dto.book.*;
 import me.dodo.readingnotes.dto.reading.ReadingRecordItem;
 import me.dodo.readingnotes.dto.reading.ReadingRecordRequest;
 import me.dodo.readingnotes.dto.reading.ReadingRecordResponse;
+import me.dodo.readingnotes.dto.reading.SentenceCleanProjection;
 import me.dodo.readingnotes.repository.BookRepository;
 import me.dodo.readingnotes.repository.ReadingRecordRepository;
 import me.dodo.readingnotes.repository.UserRepository;
+import me.dodo.readingnotes.util.EbookSourceCleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +68,12 @@ public class ReadingRecordService {
 
         ReadingRecord record = new ReadingRecord();
         record.setUser(user);
-        record.setSentence(req.getSentence());
+        String rawSentence = req.getSentence();
+        String cleanedSentence = EbookSourceCleaner.clean(rawSentence);
+        record.setSentence(cleanedSentence);
+        if (rawSentence != null && !rawSentence.equals(cleanedSentence)) {
+            record.setSentenceOriginal(rawSentence);
+        }
         record.setComment(req.getComment());
         record.setRawTitle(req.getRawTitle());
         record.setRawAuthor(req.getRawAuthor());
@@ -268,6 +275,50 @@ public class ReadingRecordService {
         readingRecordRepository.deleteAllByBookIdAndUserId(bookId, userId);
     }
 
+    // 기존 sentence 일괄 정리 (출처 문구 제거)
+    @Transactional
+    public Map<String, Integer> cleanAllSentences() {
+        int total = 0;
+        int updated = 0;
+        int page = 0;
+        final int BATCH_SIZE = 1000; // 1000건씩 페이지를 넘기면서 처리
+
+        while (true) {
+            Pageable pageable = PageRequest.of(page, BATCH_SIZE);
+            // id, sentence, sentenceOriginal 세 컬럼만 1000건씩 가져옴.
+            List<SentenceCleanProjection> batch = readingRecordRepository.findAllForClean(pageable).getContent();
+            if (batch.isEmpty()) break;
+
+            for (SentenceCleanProjection proj : batch) {
+                total++;
+                // 기존에 출처 제거된 적 있다면 sentenceOriginal으로, 없으면 sentence로
+                String base = proj.getSentenceOriginal() != null
+                        ? proj.getSentenceOriginal()
+                        : proj.getSentence();
+
+                // 출처 제거
+                String cleaned = EbookSourceCleaner.clean(base);
+                // 수정 필요한 경우(clean() 결과가 현재 sentence와 다를 때)
+                // 수정 없는 대다수 기록은 엔티티를 아예 로딩하지 않음.
+                if (!cleaned.equals(proj.getSentence())) {
+                    ReadingRecord record = readingRecordRepository.findById(proj.getId()).orElse(null);
+                    if (record == null) continue;
+                    if (record.getSentenceOriginal() == null) {
+                        record.setSentenceOriginal(proj.getSentence());
+                    }
+                    record.setSentence(cleaned);
+                    readingRecordRepository.save(record);
+                    updated++;
+                }
+            }
+
+            if (batch.size() < BATCH_SIZE) break; // 1000개 미만이면 마지막 페이지라 종료
+            page++;
+        }
+
+        log.info("sentence 일괄 정리 완료: 전체={}, 수정={}", total, updated);
+        return Map.of("total", total, "updated", updated);
+    }
 
     // ##############################
     // 관리자 전용 메서드

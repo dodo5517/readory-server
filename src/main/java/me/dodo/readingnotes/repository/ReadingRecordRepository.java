@@ -3,6 +3,7 @@ package me.dodo.readingnotes.repository;
 import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.dto.admin.AdminUserActivityResponse;
 import me.dodo.readingnotes.dto.book.BookWithLastRecordResponse;
+import me.dodo.readingnotes.dto.reading.SentenceCleanProjection;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -262,6 +263,12 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
             @Param("matchStatus") ReadingRecord.MatchStatus matchStatus,
             @Param("userId") Long userId,
             Pageable pageable);
+
+    // sentence 일괄 정리용 - id/sentence/sentenceOriginal만 조회
+    @Query("SELECT r.id AS id, r.sentence AS sentence, r.sentenceOriginal AS sentenceOriginal " +
+            "FROM ReadingRecord r WHERE r.sentence IS NOT NULL AND r.sentence <> ''")
+    Page<SentenceCleanProjection> findAllForClean(Pageable pageable);
+
 
     // 기록 상세 조회
     @Query("SELECT r FROM ReadingRecord r " +
