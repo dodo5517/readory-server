@@ -14,8 +14,6 @@ import me.dodo.readingnotes.dto.log.ApiLogDetailResponse;
 import me.dodo.readingnotes.dto.log.ApiLogListResponse;
 import me.dodo.readingnotes.dto.log.AuthLogDetailResponse;
 import me.dodo.readingnotes.dto.log.AuthLogListResponse;
-import me.dodo.readingnotes.dto.notice.NoticeResponse;
-import me.dodo.readingnotes.dto.notice.NoticeUpdateRequest;
 import me.dodo.readingnotes.dto.user.*;
 import me.dodo.readingnotes.service.*;
 import me.dodo.readingnotes.util.CookieUtil;
@@ -30,9 +28,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import me.dodo.readingnotes.dto.notice.NoticeResponse;
+import me.dodo.readingnotes.dto.notice.NoticeUpdateRequest;
+import me.dodo.readingnotes.service.NoticeService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -44,24 +46,24 @@ public class AdminController {
     private LogService logService;
     private BookService bookService;
     private ReadingRecordService readingRecordService;
-    private NoticeService noticeService;
     private ImageResizer imageResizer;
+    private NoticeService noticeService;
 
     public AdminController(UserService userService,
                            S3Service s3Service, AuthService authService,
                            LogService logService,
                            BookService bookService,
                            ReadingRecordService readingRecordService,
-                           NoticeService noticeService,
-                           ImageResizer imageResizer) {
+                           ImageResizer imageResizer,
+                           NoticeService noticeService) {
         this.userService = userService;
         this.s3Service = s3Service;
         this.authService = authService;
         this.logService = logService;
         this.bookService = bookService;
         this.readingRecordService = readingRecordService;
-        this.noticeService = noticeService;
         this.imageResizer = imageResizer;
+        this.noticeService = noticeService;
     }
 
     // ##############################
@@ -238,7 +240,7 @@ public class AdminController {
 
         return userService.deleteUserById(id);
     }
-    
+
     // 특정 유저 상태 수정
     @PostMapping("/users/{id}/status")
     public ResponseEntity<Void> changeUserStatus(@PathVariable Long id,
@@ -538,9 +540,14 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // ##############################
-    // 공지 관리
-    // ##############################
+    // 기존 sentence 일괄 정리 (출처 문구 제거)
+    @PostMapping("/records/clean-sentences")
+    public ResponseEntity<Map<String, Integer>> cleanAllSentences(HttpServletRequest request) {
+        Long adminId = extractAdminId(request);
+        userService.assertAdmin(adminId);
+
+        return ResponseEntity.ok(readingRecordService.cleanAllSentences());
+    }
 
     // 공지 이력 전체 조회
     @GetMapping("/notices")
@@ -560,7 +567,7 @@ public class AdminController {
         return ResponseEntity.ok(notice);
     }
 
-    // 새 공지 추가 (이전 공지 자동 비활성화)
+    // 새 공지 insert (이전 공지 자동 비활성화)
     @PostMapping("/notice")
     public ResponseEntity<NoticeResponse> createNotice(
             HttpServletRequest request,
