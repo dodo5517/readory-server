@@ -10,6 +10,7 @@ import me.dodo.readingnotes.dto.reading.ReadingRecordItem;
 import me.dodo.readingnotes.dto.reading.ReadingRecordRequest;
 import me.dodo.readingnotes.dto.reading.ReadingRecordResponse;
 import me.dodo.readingnotes.dto.reading.SentenceCleanProjection;
+import me.dodo.readingnotes.repository.BookCommentRepository;
 import me.dodo.readingnotes.repository.BookRepository;
 import me.dodo.readingnotes.repository.ReadingRecordRepository;
 import me.dodo.readingnotes.repository.UserRepository;
@@ -39,6 +40,7 @@ public class ReadingRecordService {
     private final BookRepository bookRepository;
     private final BookLinkService bookLinkService;
     private final BookMatchingAsyncService bookMatchingAsyncService;
+    private final BookCommentRepository bookCommentRepository;
 
     private static final Logger log = LoggerFactory.getLogger(ReadingRecordService.class);
 
@@ -50,12 +52,14 @@ public class ReadingRecordService {
                                 BookRepository bookRepository,
                                 UserRepository userRepository,
                                 BookLinkService bookLinkService,
-                                BookMatchingAsyncService bookMatchingAsyncService) {
+                                BookMatchingAsyncService bookMatchingAsyncService,
+                                BookCommentRepository bookCommentRepository) {
         this.readingRecordRepository = readingRecordRepository;
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
         this.bookLinkService = bookLinkService;
         this.bookMatchingAsyncService = bookMatchingAsyncService;
+        this.bookCommentRepository = bookCommentRepository;
     }
 
     // 새로운 기록 생성 (User 객체를 Optional로 받아서 jwt, api 분리)
@@ -184,7 +188,13 @@ public class ReadingRecordService {
                 .map(r -> new ReadingRecordItem(r.getId(), r.getRecordedAt(), r.getSentence(), r.getComment()))
                 .toList();
 
-        return new BookRecordsPageResponse(bookMeta, items, nextCursor, hasMore);
+        // 책 코멘트 조회
+        BookCommentResponse bookComment = bookCommentRepository
+                .findByUser_IdAndBook_Id(userId, bookId)
+                .map(BookCommentResponse::new)
+                .orElse(null);
+
+        return new BookRecordsPageResponse(bookMeta, bookComment, items, nextCursor, hasMore);
     }
     // pageSize 최소/최대 규정
     private int normalizeSize(int size) {
