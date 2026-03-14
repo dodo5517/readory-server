@@ -330,3 +330,18 @@ CREATE TABLE IF NOT EXISTS notices (
     created_at TIMESTAMP    NOT NULL DEFAULT now(),
     updated_at TIMESTAMP    NOT NULL DEFAULT now()
 );
+
+-- =========================
+-- Table: book_comments
+-- =========================
+CREATE TABLE book_comments (
+    id         BIGSERIAL PRIMARY KEY,
+    user_id    BIGINT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    book_id    BIGINT    NOT NULL REFERENCES books(id),
+    content    TEXT      NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_book_comment_user_book UNIQUE (user_id, book_id)
+);
+
+CREATE INDEX idx_bc_user_book ON book_comments (user_id, book_id);
