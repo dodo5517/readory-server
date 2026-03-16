@@ -6,9 +6,9 @@ import java.time.LocalDateTime;
 @Entity // 이 클래스가 JPA 엔티티임을 선언. DB 테이블과 매핑됨
 @Table(name = "reading_records", // DB에서 이 엔티티가 매핑될 테이블 이름을 지정함
     indexes = {
-            // user_id로 먼저 좁히고 recorded_at으로 정렬(기본이 desc임)
-            @Index(name = "idx_rr_user_recorded", columnList = "user_id, recorded_at"),
-            @Index(name = "idx_record_user_book_at_id", columnList = "user_id, book_id, recorded_at, id")
+            // user_id로 먼저 좁히고 created_at으로 정렬(기본이 desc임)
+            @Index(name = "idx_rr_user_recorded", columnList = "user_id, created_at"),
+            @Index(name = "idx_record_user_book_at_id", columnList = "user_id, book_id, created_at, id")
     })
 public class ReadingRecord {
 
@@ -47,8 +47,8 @@ public class ReadingRecord {
     private MatchStatus matchStatus = MatchStatus.PENDING;
 
     // 최초 기록된 시간
-    @Column(name = "recorded_at", nullable = false)
-    private LocalDateTime recordedAt;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
     // 수정한 시간
     @Column(name = "updated_at", nullable = false)
@@ -67,7 +67,7 @@ public class ReadingRecord {
     // entity가 db에 insert 되기 전에 호출됨.
     @PrePersist
     public void prePersist() {
-        if (recordedAt == null) recordedAt = LocalDateTime.now();
+        if (createdAt == null) createdAt = LocalDateTime.now();
         if (updatedAt == null) updatedAt = LocalDateTime.now();
         if (matchStatus == null) matchStatus = MatchStatus.PENDING;
     }
@@ -81,7 +81,7 @@ public class ReadingRecord {
                 ", sentence='" + sentence + '\'' +
                 ", comment='" + comment + '\'' +
                 ", matchStatus=" + matchStatus +
-                ", recordedAt=" + recordedAt +
+                ", createdAt=" + createdAt +
                 '}';
     }
 
@@ -121,8 +121,8 @@ public class ReadingRecord {
     public MatchStatus getMatchStatus() { return matchStatus; }
     public void setMatchStatus(MatchStatus matchStatus) { this.matchStatus = matchStatus; }
 
-    public LocalDateTime getRecordedAt() { return recordedAt; }
-    public void setRecordedAt(LocalDateTime recordedAt) { this.recordedAt = recordedAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }

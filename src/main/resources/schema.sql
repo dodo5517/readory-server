@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS reading_records (
 
     match_status  VARCHAR(32) NOT NULL DEFAULT 'PENDING',
 
-    recorded_at   TIMESTAMP NOT NULL,
+    created_at    TIMESTAMP NOT NULL,
     updated_at    TIMESTAMP NOT NULL,
     matched_at    TIMESTAMP,
 
@@ -168,17 +168,17 @@ CREATE TABLE IF NOT EXISTS reading_records (
 
 -- 엔티티에 선언한 인덱스 반영
 CREATE INDEX IF NOT EXISTS idx_rr_user_recorded
-    ON reading_records (user_id, recorded_at);
+    ON reading_records (user_id, created_at);
 
 CREATE INDEX IF NOT EXISTS idx_record_user_book_at_id
-    ON reading_records (user_id, book_id, recorded_at, id);
+    ON reading_records (user_id, book_id, created_at, id);
 
 -- (선택) 매칭 상태/시간 기반 조회가 잦으면 도움
 CREATE INDEX IF NOT EXISTS idx_rr_match_status
     ON reading_records (match_status);
 
 CREATE INDEX IF NOT EXISTS idx_rr_user_match_status_recorded
-    ON reading_records (user_id, match_status, recorded_at);
+    ON reading_records (user_id, match_status, created_at);
 
 CREATE INDEX IF NOT EXISTS idx_rr_matched_at
     ON reading_records (matched_at);

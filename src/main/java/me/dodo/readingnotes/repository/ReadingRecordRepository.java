@@ -37,7 +37,7 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
              or lower(b.title)  like lower(concat('%', :q, '%'))
              or lower(b.author) like lower(concat('%', :q, '%'))
           )
-          order by rr.recordedAt desc, rr.id desc
+          order by rr.createdAt desc, rr.id desc
         """,
         countQuery = """
         select count(rr)
@@ -66,7 +66,7 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
              or lower(rr.sentence) like lower(concat('%', :q, '%'))
              or lower(rr.comment)  like lower(concat('%', :q, '%'))
           )
-          order by rr.recordedAt desc, rr.id desc
+          order by rr.createdAt desc, rr.id desc
         """,
             countQuery = """
         select count(rr)
@@ -92,9 +92,9 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
            and r.book.id = :bookId
            and ( 
                 :cursorAt is null
-                 or r.recordedAt < :cursorAt
-                 or (r.recordedAt = :cursorAt and r.id < :cursorId) )
-         order by r.recordedAt desc, r.id desc
+                 or r.createdAt < :cursorAt
+                 or (r.createdAt = :cursorAt and r.id < :cursorId) )
+         order by r.createdAt desc, r.id desc
     """)
     List<ReadingRecord> findSliceByUserAndBookWithCursor(
             @Param("userId") Long userId,
@@ -108,7 +108,7 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
         select r from ReadingRecord r
         where r.user.id = :userId
           and r.book.id = :bookId
-        order by r.recordedAt desc, r.id desc
+        order by r.createdAt desc, r.id desc
         """)
     List<ReadingRecord> findSliceFirstPage(
             @Param("userId") Long userId,
@@ -119,8 +119,8 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
         select r from ReadingRecord r
         where r.user.id = :userId
           and r.book.id = :bookId
-          and (r.recordedAt < :cursorAt or (r.recordedAt = :cursorAt and r.id < :cursorId))
-        order by r.recordedAt desc, r.id desc
+          and (r.createdAt < :cursorAt or (r.createdAt = :cursorAt and r.id < :cursorId))
+        order by r.createdAt desc, r.id desc
         """)
     List<ReadingRecord> findSliceNextPage(
             @Param("userId") Long userId,
@@ -133,19 +133,19 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
 
     // 기간 계산(해당 유저의 해당 책 기록 중 가장 과거/가장 최근)
     @Query("""
-        select min(r.recordedAt)
+        select min(r.createdAt)
           from ReadingRecord r
          where r.user.id = :userId
            and r.book.id = :bookId
     """)
-    LocalDateTime findMinRecordedAtByUserAndBook(Long userId, Long bookId);
+    LocalDateTime findMinCreatedAtByUserAndBook(Long userId, Long bookId);
     @Query("""
-        select max(r.recordedAt)
+        select max(r.createdAt)
           from ReadingRecord r
          where r.user.id = :userId
            and r.book.id = :bookId
     """)
-    LocalDateTime findMaxRecordedAtByUserAndBook(Long userId, Long bookId);
+    LocalDateTime findMaxCreatedAtByUserAndBook(Long userId, Long bookId);
 
     // 해당 유저의 기록 중 최신 N개만 가져옴,  count 쿼리 없음.
     // 페이지네이션 필요 없으니 굳이 Page 안 쓰고 List로 반환
@@ -153,7 +153,7 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
             select rr from ReadingRecord rr
             left join fetch rr.book b
             where rr.user.id = :userId
-            order by rr.recordedAt desc
+            order by rr.createdAt desc
             """)
     List<ReadingRecord> findLatestByUser(@Param("userId") Long userId, Pageable pageable);
 
@@ -161,7 +161,7 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     // 최근 기록순
     @Query("""
         select new me.dodo.readingnotes.dto.book.BookWithLastRecordResponse(
-            b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl, max(r.recordedAt)
+            b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl, max(r.createdAt)
         )
         from ReadingRecord r join r.book b
         where r.user.id = :userId
@@ -171,13 +171,13 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                or lower(b.title) like lower(concat('%', :q, '%'))
                or lower(b.author) like lower(concat('%', :q, '%')))
         group by b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl
-        order by max(r.recordedAt) desc
+        order by max(r.createdAt) desc
         """)
     Page<BookWithLastRecordResponse> findConfirmedBooksByRecent(Long userId, String q, Pageable pageable);
     // 제목순
     @Query("""
         select new me.dodo.readingnotes.dto.book.BookWithLastRecordResponse(
-            b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl, max(r.recordedAt)
+            b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl, max(r.createdAt)
         )
         from ReadingRecord r join r.book b
         where r.user.id = :userId
@@ -195,24 +195,24 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     // sqlite
 //    @Query("""
 //        select
-//           function('strftime', '%Y-%m-%d', r.recordedAt) as day,
+//           function('strftime', '%Y-%m-%d', r.createdAt) as day,
 //           count(r) as cnt
 //        from ReadingRecord r
 //        where r.user.id = :userId
-//          and r.recordedAt >= :start and r.recordedAt < :end
-//        group by function('strftime', '%Y-%m-%d', r.recordedAt)
-//        order by function('strftime', '%Y-%m-%d', r.recordedAt) asc
+//          and r.createdAt >= :start and r.createdAt < :end
+//        group by function('strftime', '%Y-%m-%d', r.createdAt)
+//        order by function('strftime', '%Y-%m-%d', r.createdAt) asc
 //        """)
     // postgreSQL
     @Query("""
         select
-           function('date', r.recordedAt) as day,
+           function('date', r.createdAt) as day,
            count(r) as cnt
         from ReadingRecord r
         where r.user.id = :userId
-          and r.recordedAt >= :start and r.recordedAt < :end
-        group by function('date', r.recordedAt)
-        order by function('date', r.recordedAt) asc
+          and r.createdAt >= :start and r.createdAt < :end
+        group by function('date', r.createdAt)
+        order by function('date', r.createdAt) asc
     """)
     List<DayCountRow> countByDayInRange(@Param("userId") Long userId,
                                         @Param("start") LocalDateTime start,
@@ -223,8 +223,8 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
       select rr
       from ReadingRecord rr
       where rr.user.id = :userId
-        and rr.recordedAt >= :start
-        and rr.recordedAt <  :end
+        and rr.createdAt >= :start
+        and rr.createdAt <  :end
         and (
               :q is null or :q = ''
            or lower(rr.sentence) like lower(concat('%', :q, '%'))
@@ -284,26 +284,26 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     List<Object[]> countByMatchStatus();
 
     // 특정 기간 내 일별 기록 수
-    @Query("SELECT CAST(r.recordedAt AS date), COUNT(r) " +
+    @Query("SELECT CAST(r.createdAt AS date), COUNT(r) " +
             "FROM ReadingRecord r " +
-            "WHERE r.recordedAt >= :from " +
-            "GROUP BY CAST(r.recordedAt AS date) " +
-            "ORDER BY CAST(r.recordedAt AS date)")
+            "WHERE r.createdAt >= :from " +
+            "GROUP BY CAST(r.createdAt AS date) " +
+            "ORDER BY CAST(r.createdAt AS date)")
     List<Object[]> countDailyFrom(@Param("from") LocalDateTime from);
 
     // 특정 기간 내 활성 유저 수 (개인 식별 없이 집계만)
-    @Query("SELECT COUNT(DISTINCT r.user.id) FROM ReadingRecord r WHERE r.recordedAt >= :from")
+    @Query("SELECT COUNT(DISTINCT r.user.id) FROM ReadingRecord r WHERE r.createdAt >= :from")
     long countDistinctActiveUsersFrom(@Param("from") LocalDateTime from);
 
     // 유저 활동 현황 목록 - 민원 대응 및 활성 유저 파악용 기록 내용은 포함하지 않음
     @Query("SELECT new me.dodo.readingnotes.dto.admin.AdminUserActivityResponse(" +
-            "  r.user.id, r.user.username, r.user.email, COUNT(r), MAX(r.recordedAt)) " +
+            "  r.user.id, r.user.username, r.user.email, COUNT(r), MAX(r.createdAt)) " +
             "FROM ReadingRecord r " +
             "GROUP BY r.user.id, r.user.username, r.user.email " +
-            "ORDER BY MAX(r.recordedAt) DESC")
+            "ORDER BY MAX(r.createdAt) DESC")
     Page<AdminUserActivityResponse> findUserActivityForAdmin(Pageable pageable);
 
     // 오늘 기록 수
-    @Query("SELECT COUNT(r) FROM ReadingRecord r WHERE r.recordedAt >= :startOfDay")
+    @Query("SELECT COUNT(r) FROM ReadingRecord r WHERE r.createdAt >= :startOfDay")
     long countTodayRecords(@Param("startOfDay") LocalDateTime startOfDay);
 }

@@ -467,7 +467,7 @@ public class AdminController {
             @RequestParam Long userId,   // required=true (기본값)
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ReadingRecord.MatchStatus matchStatus,
-            @PageableDefault(size = 20, sort = "recordedAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             HttpServletRequest request) {
 
         Long adminId = extractAdminId(request);

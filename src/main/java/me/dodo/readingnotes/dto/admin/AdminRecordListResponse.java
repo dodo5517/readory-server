@@ -9,7 +9,7 @@ public class AdminRecordListResponse {
     private String rawTitle;
     private String rawAuthor;
     private ReadingRecord.MatchStatus matchStatus;
-    private LocalDateTime recordedAt;
+    private LocalDateTime createdAt;
 
     public AdminRecordListResponse(ReadingRecord record) {
         this.id = record.getId();
@@ -17,7 +17,7 @@ public class AdminRecordListResponse {
         this.rawTitle = record.getRawTitle();
         this.rawAuthor = record.getRawAuthor();
         this.matchStatus = record.getMatchStatus();
-        this.recordedAt = record.getRecordedAt();
+        this.createdAt = record.getCreatedAt();
     }
 
     private String truncate(String str, int maxLength) {
@@ -31,5 +31,5 @@ public class AdminRecordListResponse {
     public String getRawTitle() { return rawTitle; }
     public String getRawAuthor() { return rawAuthor; }
     public ReadingRecord.MatchStatus getMatchStatus() { return matchStatus; }
-    public LocalDateTime getRecordedAt() { return recordedAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }
