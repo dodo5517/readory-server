@@ -17,7 +17,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Modifying
     @Transactional
     @Query(value = """
-        INSERT INTO refresh_token (user_id, device_info, token, expiry_date)
+        INSERT INTO refresh_tokens (user_id, device_info, token, expiry_date)
         VALUES (:userId, :deviceInfo, :token, :expiryDate)
         ON CONFLICT(user_id, device_info) DO UPDATE SET
             token = excluded.token,

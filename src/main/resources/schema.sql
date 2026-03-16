@@ -49,9 +49,9 @@ CREATE TRIGGER trg_users_set_updated_at
     EXECUTE FUNCTION set_updated_at();
 
 -- =========================
--- Table: refresh_token
+-- Table: refresh_tokens
 -- =========================
-CREATE TABLE IF NOT EXISTS refresh_token (
+CREATE TABLE IF NOT EXISTS refresh_tokens (
                                              id          BIGSERIAL PRIMARY KEY,
 
                                              user_id     BIGINT NOT NULL,
@@ -70,15 +70,15 @@ CREATE TABLE IF NOT EXISTS refresh_token (
 
 -- upsert conflict 대상 (user_id, device_info)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_refresh_token_user_device
-    ON refresh_token (user_id, device_info);
+    ON refresh_tokens (user_id, device_info);
 
 -- token 전역 유니크 (엔티티에 unique=true라 반영)
 CREATE UNIQUE INDEX IF NOT EXISTS uq_refresh_token_token
-    ON refresh_token (token);
+    ON refresh_tokens (token);
 
 -- (선택) user_id로 토큰 조회가 잦으면 도움
 CREATE INDEX IF NOT EXISTS idx_refresh_token_user_id
-    ON refresh_token (user_id);
+    ON refresh_tokens (user_id);
 
 -- =========================
 -- Table: books
@@ -184,9 +184,9 @@ CREATE INDEX IF NOT EXISTS idx_rr_matched_at
     ON reading_records (matched_at);
 
 -- =========================
--- Table: book_source_link
+-- Table: book_source_links
 -- =========================
-CREATE TABLE IF NOT EXISTS book_source_link (
+CREATE TABLE IF NOT EXISTS book_source_links (
     id           BIGSERIAL PRIMARY KEY,
 
     book_id      BIGINT NOT NULL,
@@ -212,14 +212,14 @@ CREATE TABLE IF NOT EXISTS book_source_link (
 
 -- 엔티티 인덱스 반영
 CREATE INDEX IF NOT EXISTS idx_bsl_isbn13
-    ON book_source_link (isbn13);
+    ON book_source_links (isbn13);
 
 -- (선택) 아래 인덱스는 실제 조회 패턴에 따라 유용할 수 있음
 CREATE INDEX IF NOT EXISTS idx_bsl_book_id
-    ON book_source_link (book_id);
+    ON book_source_links (book_id);
 
 CREATE INDEX IF NOT EXISTS idx_bsl_source
-    ON book_source_link (source);
+    ON book_source_links (source);
 
 -- =========================
 -- Table: user_auth_logs

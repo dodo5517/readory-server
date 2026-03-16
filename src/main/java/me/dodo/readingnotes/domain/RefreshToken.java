@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Entity
 // 복합 유니크 제약 조건으로 같은 디바이스 중복 방지, 다른 디바이스는 새 토큰 발급
-@Table(name = "refresh_token",
+@Table(name = "refresh_tokens",
     uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "device_info"})
 )
 public class RefreshToken {

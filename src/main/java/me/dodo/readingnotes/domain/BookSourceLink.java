@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "book_source_link",
+@Table(name = "book_source_links",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uq_book_source", columnNames = {"book_id", "source"}),
                 @UniqueConstraint(name = "uq_source_external", columnNames = {"source", "external_id"})
