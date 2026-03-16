@@ -197,7 +197,7 @@ CREATE TABLE IF NOT EXISTS book_source_link (
     isbn10       VARCHAR(10),
     isbn13       VARCHAR(13),
 
-    synced_at    TIMESTAMP,
+    created_at   TIMESTAMP,
 
     meta_json    TEXT,
 

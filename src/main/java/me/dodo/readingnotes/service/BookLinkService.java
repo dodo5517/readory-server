@@ -109,7 +109,7 @@ public class BookLinkService {
             // 기존 수동 흐름과 충돌하지 않게 누적 또는 덮어쓰기 전략 택1
             link.setMetaJson(metaJson);
         }
-        link.setSyncedAt(java.time.LocalDateTime.now());
+        link.setCreatedAt(java.time.LocalDateTime.now());
         linkRepo.save(link);
     }
     // 수동 매칭 시 사용

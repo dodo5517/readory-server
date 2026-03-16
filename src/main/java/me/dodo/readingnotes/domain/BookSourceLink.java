@@ -36,7 +36,8 @@ public class BookSourceLink {
     @Column(length = 13)
     private String isbn13;
 
-    private LocalDateTime syncedAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     @Column(columnDefinition = "TEXT")
     private String metaJson;
@@ -64,8 +65,8 @@ public class BookSourceLink {
     public String getIsbn13() { return isbn13; }
     public void setIsbn13(String isbn13) { this.isbn13 = isbn13; }
 
-    public LocalDateTime getSyncedAt() { return syncedAt; }
-    public void setSyncedAt(LocalDateTime syncedAt) { this.syncedAt = syncedAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     public String getMetaJson() { return metaJson; }
     public void setMetaJson(String metaJson) { this.metaJson = metaJson; }
