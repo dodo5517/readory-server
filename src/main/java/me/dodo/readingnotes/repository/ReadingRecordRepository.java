@@ -2,6 +2,7 @@ package me.dodo.readingnotes.repository;
 
 import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.dto.admin.AdminUserActivityResponse;
+import me.dodo.readingnotes.domain.UserBookPin;
 import me.dodo.readingnotes.dto.book.BookWithLastRecordResponse;
 import me.dodo.readingnotes.dto.reading.SentenceCleanProjection;
 import org.springframework.data.domain.*;
@@ -39,7 +40,7 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
           )
           order by rr.createdAt desc, rr.id desc
         """,
-        countQuery = """
+            countQuery = """
         select count(rr)
         from ReadingRecord rr
         join rr.book b
@@ -161,7 +162,11 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     // 최근 기록순
     @Query("""
         select new me.dodo.readingnotes.dto.book.BookWithLastRecordResponse(
-            b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl, max(r.createdAt)
+            b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl, max(r.createdAt),
+            year(max(r.createdAt)),
+            (case when exists (
+                select 1 from UserBookPin p where p.user.id = :userId and p.book.id = b.id
+            ) then true else false end)
         )
         from ReadingRecord r join r.book b
         where r.user.id = :userId
@@ -171,13 +176,21 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                or lower(b.title) like lower(concat('%', :q, '%'))
                or lower(b.author) like lower(concat('%', :q, '%')))
         group by b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl
-        order by max(r.createdAt) desc
+        order by
+            (case when exists (
+                select 1 from UserBookPin p where p.user.id = :userId and p.book.id = b.id
+            ) then 0 else 1 end) asc,
+            max(r.createdAt) desc
         """)
-    Page<BookWithLastRecordResponse> findConfirmedBooksByRecent(Long userId, String q, Pageable pageable);
+    Page<BookWithLastRecordResponse> findConfirmedBooksByRecent(@Param("userId") Long userId, @Param("q") String q, Pageable pageable);
     // 제목순
     @Query("""
         select new me.dodo.readingnotes.dto.book.BookWithLastRecordResponse(
-            b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl, max(r.createdAt)
+            b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl, max(r.createdAt),
+            year(max(r.createdAt)),
+            (case when exists (
+                select 1 from UserBookPin p where p.user.id = :userId and p.book.id = b.id
+            ) then true else false end)
         )
         from ReadingRecord r join r.book b
         where r.user.id = :userId
@@ -187,9 +200,13 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                or lower(b.title) like lower(concat('%', :q, '%'))
                or lower(b.author) like lower(concat('%', :q, '%')))
         group by b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl
-        order by b.title asc
+        order by
+            (case when exists (
+                select 1 from UserBookPin p where p.user.id = :userId and p.book.id = b.id
+            ) then 0 else 1 end) asc,
+            b.title asc
         """)
-    Page<BookWithLastRecordResponse> findConfirmedBooksByTitle(Long userId, String q, Pageable pageable);
+    Page<BookWithLastRecordResponse> findConfirmedBooksByTitle(@Param("userId") Long userId, @Param("q") String q, Pageable pageable);
 
     // Day 목록
     // sqlite
@@ -239,7 +256,7 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
 
     // 책에 대한 기록 존재
     boolean existsByBook_IdAndUser_Id(Long bookId, Long userId);
-    
+
     // 해당 책의 모든 기록 삭제
     @Modifying
     @Query("DELETE FROM ReadingRecord r WHERE r.book.id = :bookId AND r.user.id = :userId")
