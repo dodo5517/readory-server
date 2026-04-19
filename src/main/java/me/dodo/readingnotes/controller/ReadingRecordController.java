@@ -173,8 +173,8 @@ public class ReadingRecordController {
 
         // 날짜 오름/내림으로만 정렬 가능함.
         Sort order = "asc".equalsIgnoreCase(sort)
-                ? Sort.by("createdAt").ascending()
-                : Sort.by("createdAt").descending();
+                ? Sort.by("recordedAt").ascending()
+                : Sort.by("recordedAt").descending();
 
         Pageable pageable = PageRequest.of(page, size, order);
         Page<ReadingRecord> pageAndRecords = calendarService.findByMonth(userId, year, month, q, pageable);
@@ -197,8 +197,8 @@ public class ReadingRecordController {
 
         // 날짜 오름/내림으로만 정렬 가능함.
         Sort order = "asc".equalsIgnoreCase(sort)
-                ? Sort.by("createdAt").ascending()
-                : Sort.by("createdAt").descending();
+                ? Sort.by("recordedAt").ascending()
+                : Sort.by("recordedAt").descending();
 
         Pageable pageable = PageRequest.of(page, size, order);
         Page<ReadingRecord> pageAndRecords = calendarService.findByDay(userId, LocalDate.parse(date), q, pageable);
