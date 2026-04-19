@@ -322,4 +322,19 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     // 오늘 기록 수
     @Query("SELECT COUNT(r) FROM ReadingRecord r WHERE r.recordedAt >= :startOfDay")
     long countTodayRecords(@Param("startOfDay") LocalDateTime startOfDay);
+
+    // ── createdAt 기준 통계 (앱 입력 시각) ───────────────────────
+
+    @Query("SELECT CAST(r.createdAt AS date), COUNT(r) " +
+            "FROM ReadingRecord r " +
+            "WHERE r.createdAt >= :from " +
+            "GROUP BY CAST(r.createdAt AS date) " +
+            "ORDER BY CAST(r.createdAt AS date)")
+    List<Object[]> countDailyFromByCreatedAt(@Param("from") LocalDateTime from);
+
+    @Query("SELECT COUNT(DISTINCT r.user.id) FROM ReadingRecord r WHERE r.createdAt >= :from")
+    long countDistinctActiveUsersFromByCreatedAt(@Param("from") LocalDateTime from);
+
+    @Query("SELECT COUNT(r) FROM ReadingRecord r WHERE r.createdAt >= :startOfDay")
+    long countTodayRecordsByCreatedAt(@Param("startOfDay") LocalDateTime startOfDay);
 }
