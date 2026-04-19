@@ -366,7 +366,8 @@ public class ReadingRecordService {
         long totalRecords = readingRecordRepository.count();
 
         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-        long todayRecords = readingRecordRepository.countTodayRecords(startOfToday);
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
 
         // 매칭 상태별 집계
         List<Object[]> statusCounts = readingRecordRepository.countByMatchStatus();
@@ -376,33 +377,41 @@ public class ReadingRecordService {
                         row -> (Long) row[1]
                 ));
 
-        // 최근 30일 일별 기록 수
-        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-        List<Object[]> dailyRaw = readingRecordRepository.countDailyFrom(thirtyDaysAgo);
-        List<AdminRecordStatsResponse.DailyCount> dailyCounts = dailyRaw.stream()
-                .map(row -> new AdminRecordStatsResponse.DailyCount(
-                        ((java.sql.Date) row[0]).toLocalDate(),
-                        (Long) row[1]
-                ))
-                .collect(Collectors.toList());
+        // recordedAt 기준
+        long todayRecordCount = readingRecordRepository.countTodayRecords(startOfToday);
+        List<AdminRecordStatsResponse.DailyCount> dailyRecordCounts =
+                readingRecordRepository.countDailyFrom(thirtyDaysAgo).stream()
+                        .map(row -> new AdminRecordStatsResponse.DailyCount(
+                                ((java.sql.Date) row[0]).toLocalDate(), (Long) row[1]))
+                        .collect(Collectors.toList());
+        long activeUsersLast7Days = readingRecordRepository.countDistinctActiveUsersFrom(sevenDaysAgo);
+        long activeUsersLast30Days = readingRecordRepository.countDistinctActiveUsersFrom(thirtyDaysAgo);
 
-        // 활성 유저 수
-        long activeUsersLast7Days = readingRecordRepository
-                .countDistinctActiveUsersFrom(thirtyDaysAgo);
-        long activeUsersLast30Days = readingRecordRepository
-                .countDistinctActiveUsersFrom(LocalDateTime.now().minusDays(30));
+        // createdAt 기준 (앱 입력 시각)
+        long todayAppInputCount = readingRecordRepository.countTodayRecordsByCreatedAt(startOfToday);
+        List<AdminRecordStatsResponse.DailyCount> dailyAppInputCounts =
+                readingRecordRepository.countDailyFromByCreatedAt(thirtyDaysAgo).stream()
+                        .map(row -> new AdminRecordStatsResponse.DailyCount(
+                                ((java.sql.Date) row[0]).toLocalDate(), (Long) row[1]))
+                        .collect(Collectors.toList());
+        long activeAppInputUsersLast7Days = readingRecordRepository.countDistinctActiveUsersFromByCreatedAt(sevenDaysAgo);
+        long activeAppInputUsersLast30Days = readingRecordRepository.countDistinctActiveUsersFromByCreatedAt(thirtyDaysAgo);
 
         return new AdminRecordStatsResponse(
                 totalRecords,
-                todayRecords,
+                todayRecordCount,
+                dailyRecordCounts,
+                activeUsersLast7Days,
+                activeUsersLast30Days,
+                todayAppInputCount,
+                dailyAppInputCounts,
+                activeAppInputUsersLast7Days,
+                activeAppInputUsersLast30Days,
                 statusMap.getOrDefault("PENDING", 0L),
                 statusMap.getOrDefault("RESOLVED_AUTO", 0L),
                 statusMap.getOrDefault("RESOLVED_MANUAL", 0L),
                 statusMap.getOrDefault("NO_CANDIDATE", 0L),
-                statusMap.getOrDefault("MULTIPLE_CANDIDATES", 0L),
-                dailyCounts,
-                activeUsersLast7Days,
-                activeUsersLast30Days
+                statusMap.getOrDefault("MULTIPLE_CANDIDATES", 0L)
         );
     }
 
