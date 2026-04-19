@@ -1,10 +1,13 @@
 package me.dodo.readingnotes.dto.reading;
 
+import java.time.LocalDateTime;
+
 public class ReadingRecordRequest {
     private String rawTitle;
     private String rawAuthor;
     private String sentence;
     private String comment;
+    private LocalDateTime recordedAt;
 
     @Override
     public String toString() {
@@ -13,6 +16,7 @@ public class ReadingRecordRequest {
                 ", author='" + rawAuthor + '\'' +
                 ", sentence='" + sentence + '\'' +
                 ", comment='" + comment + '\'' +
+                ", recordedAt='" + recordedAt + '\'' +
                 '}';
     }
 
@@ -48,6 +52,13 @@ public class ReadingRecordRequest {
     }
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public java.time.LocalDateTime getRecordedAt() {
+        return recordedAt;
+    }
+    public void setRecordedAt(java.time.LocalDateTime recordedAt) {
+        this.recordedAt = recordedAt;
     }
 
 }
