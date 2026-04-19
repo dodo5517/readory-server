@@ -24,6 +24,7 @@ public class AdminRecordDetailResponse {
     // 상태 및 시간
     private ReadingRecord.MatchStatus matchStatus;
     private LocalDateTime createdAt;
+    private LocalDateTime recordedAt;
     private LocalDateTime updatedAt;
     private LocalDateTime matchedAt;
 
@@ -50,6 +51,7 @@ public class AdminRecordDetailResponse {
         // 상태 및 시간
         this.matchStatus = record.getMatchStatus();
         this.createdAt = record.getCreatedAt();
+        this.recordedAt = record.getRecordedAt();
         this.updatedAt = record.getUpdatedAt();
         this.matchedAt = record.getMatchedAt();
     }
@@ -67,6 +69,7 @@ public class AdminRecordDetailResponse {
     public String getRawAuthor() { return rawAuthor; }
     public ReadingRecord.MatchStatus getMatchStatus() { return matchStatus; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getRecordedAt() { return recordedAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public LocalDateTime getMatchedAt() { return matchedAt; }
 }

@@ -82,6 +82,10 @@ public class ReadingRecordService {
         record.setRawTitle(req.getRawTitle());
         record.setRawAuthor(req.getRawAuthor());
         record.setCreatedAt(LocalDateTime.now());
+        // 날짜 선택하면 그때로 저장 없으면 지금 시간으로 저장.
+        record.setRecordedAt(
+                req.getRecordedAt() != null ? req.getRecordedAt() : LocalDateTime.now()
+        );
         record.setUpdatedAt(LocalDateTime.now());
 
         ReadingRecord saved = readingRecordRepository.save(record);
@@ -97,7 +101,7 @@ public class ReadingRecordService {
 
     // 해당 유저의 최신 N개 기록 조회
     public List<ReadingRecord> getLatestRecords(Long userId, int size) {
-        PageRequest pr = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        PageRequest pr = PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "recordedAt"));
         return readingRecordRepository.findLatestByUser(userId, pr);
     }
 
@@ -132,7 +136,7 @@ public class ReadingRecordService {
         Cursor c = parseCursor(cursor);
 
         // 기록 시간 내림차순 → id 내림차순.
-        Sort sort = Sort.by("createdAt").descending().and(Sort.by("id").descending());
+        Sort sort = Sort.by("recordedAt").descending().and(Sort.by("id").descending());
         // 커서가 있다면 커서보다 더 작은(과거) 레코드만 가져옴.
         // sqlite
 //        List<ReadingRecord> fetched = readingRecordRepository.findSliceByUserAndBookWithCursor(
@@ -157,16 +161,16 @@ public class ReadingRecordService {
         // 더 남았어도 pageSize만큼만 가져옴
         if (hasMore) fetched = new ArrayList<>(fetched.subList(0, pageSize));
 
-        // 현재 페이지의 마지막 요소의 (createdAt, id)를 커서 문자열(“epochMillis_id”)로 직렬화하여 반환
+        // 현재 페이지의 마지막 요소의 (recordedAt, id)를 커서 문자열(“epochMillis_id”)로 직렬화하여 반환
         String nextCursor = null;
         if (hasMore && !fetched.isEmpty()) {
             ReadingRecord last = fetched.get(fetched.size() - 1);
-            nextCursor = buildCursor(last.getCreatedAt(), last.getId());
+            nextCursor = buildCursor(last.getRecordedAt(), last.getId());
         }
 
         // 기간 계산
-        LocalDateTime minAt = readingRecordRepository.findMinCreatedAtByUserAndBook(userId, bookId);
-        LocalDateTime maxAt = readingRecordRepository.findMaxCreatedAtByUserAndBook(userId, bookId);
+        LocalDateTime minAt = readingRecordRepository.findMinRecordedAtByUserAndBook(userId, bookId);
+        LocalDateTime maxAt = readingRecordRepository.findMaxRecordedAtByUserAndBook(userId, bookId);
 
         String periodStart = (minAt == null) ? null : minAt.toString();
         String periodEnd   = (maxAt == null) ? null : maxAt.toString();
@@ -185,7 +189,7 @@ public class ReadingRecordService {
 
         // 기록 정보 매핑
         List<ReadingRecordItem> items = fetched.stream()
-                .map(r -> new ReadingRecordItem(r.getId(), r.getCreatedAt(), r.getSentence(), r.getComment()))
+                .map(r -> new ReadingRecordItem(r.getId(), r.getRecordedAt(), r.getSentence(), r.getComment()))
                 .toList();
 
         // 책 코멘트 조회
@@ -218,9 +222,9 @@ public class ReadingRecordService {
         LocalDateTime at = LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZONE);
         return new Cursor(at, id);
     }
-    // (createdAt, id) -> "epochMillis_id"로 직렬화
-    private String buildCursor(LocalDateTime createdAt, Long id) {
-        long epochMillis = createdAt.atZone(ZONE).toInstant().toEpochMilli();
+    // (recordedAt, id) -> "epochMillis_id"로 직렬화
+    private String buildCursor(LocalDateTime recordedAt, Long id) {
+        long epochMillis = recordedAt.atZone(ZONE).toInstant().toEpochMilli();
         return epochMillis + "_" + id;
     }
 
@@ -241,6 +245,7 @@ public class ReadingRecordService {
         Optional.ofNullable(request.getRawAuthor()).ifPresent(record::setRawAuthor);
         Optional.ofNullable(request.getSentence()).ifPresent(record::setSentence);
         Optional.ofNullable(request.getComment()).ifPresent(record::setComment);
+        Optional.ofNullable(request.getRecordedAt()).ifPresent(record::setRecordedAt);
         record.setUpdatedAt(LocalDateTime.now());
 
         // 책 정보 변경 시
@@ -361,7 +366,8 @@ public class ReadingRecordService {
         long totalRecords = readingRecordRepository.count();
 
         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-        long todayRecords = readingRecordRepository.countTodayRecords(startOfToday);
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
 
         // 매칭 상태별 집계
         List<Object[]> statusCounts = readingRecordRepository.countByMatchStatus();
@@ -371,33 +377,41 @@ public class ReadingRecordService {
                         row -> (Long) row[1]
                 ));
 
-        // 최근 30일 일별 기록 수
-        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-        List<Object[]> dailyRaw = readingRecordRepository.countDailyFrom(thirtyDaysAgo);
-        List<AdminRecordStatsResponse.DailyCount> dailyCounts = dailyRaw.stream()
-                .map(row -> new AdminRecordStatsResponse.DailyCount(
-                        ((java.sql.Date) row[0]).toLocalDate(),
-                        (Long) row[1]
-                ))
-                .collect(Collectors.toList());
+        // recordedAt 기준
+        long todayRecordCount = readingRecordRepository.countTodayRecords(startOfToday);
+        List<AdminRecordStatsResponse.DailyCount> dailyRecordCounts =
+                readingRecordRepository.countDailyFrom(thirtyDaysAgo).stream()
+                        .map(row -> new AdminRecordStatsResponse.DailyCount(
+                                ((java.sql.Date) row[0]).toLocalDate(), (Long) row[1]))
+                        .collect(Collectors.toList());
+        long activeUsersLast7Days = readingRecordRepository.countDistinctActiveUsersFrom(sevenDaysAgo);
+        long activeUsersLast30Days = readingRecordRepository.countDistinctActiveUsersFrom(thirtyDaysAgo);
 
-        // 활성 유저 수
-        long activeUsersLast7Days = readingRecordRepository
-                .countDistinctActiveUsersFrom(thirtyDaysAgo);
-        long activeUsersLast30Days = readingRecordRepository
-                .countDistinctActiveUsersFrom(LocalDateTime.now().minusDays(30));
+        // createdAt 기준 (앱 입력 시각)
+        long todayAppInputCount = readingRecordRepository.countTodayRecordsByCreatedAt(startOfToday);
+        List<AdminRecordStatsResponse.DailyCount> dailyAppInputCounts =
+                readingRecordRepository.countDailyFromByCreatedAt(thirtyDaysAgo).stream()
+                        .map(row -> new AdminRecordStatsResponse.DailyCount(
+                                ((java.sql.Date) row[0]).toLocalDate(), (Long) row[1]))
+                        .collect(Collectors.toList());
+        long activeAppInputUsersLast7Days = readingRecordRepository.countDistinctActiveUsersFromByCreatedAt(sevenDaysAgo);
+        long activeAppInputUsersLast30Days = readingRecordRepository.countDistinctActiveUsersFromByCreatedAt(thirtyDaysAgo);
 
         return new AdminRecordStatsResponse(
                 totalRecords,
-                todayRecords,
+                todayRecordCount,
+                dailyRecordCounts,
+                activeUsersLast7Days,
+                activeUsersLast30Days,
+                todayAppInputCount,
+                dailyAppInputCounts,
+                activeAppInputUsersLast7Days,
+                activeAppInputUsersLast30Days,
                 statusMap.getOrDefault("PENDING", 0L),
                 statusMap.getOrDefault("RESOLVED_AUTO", 0L),
                 statusMap.getOrDefault("RESOLVED_MANUAL", 0L),
                 statusMap.getOrDefault("NO_CANDIDATE", 0L),
-                statusMap.getOrDefault("MULTIPLE_CANDIDATES", 0L),
-                dailyCounts,
-                activeUsersLast7Days,
-                activeUsersLast30Days
+                statusMap.getOrDefault("MULTIPLE_CANDIDATES", 0L)
         );
     }
 

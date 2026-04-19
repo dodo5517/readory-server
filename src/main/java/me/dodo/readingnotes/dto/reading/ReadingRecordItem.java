@@ -6,11 +6,11 @@ public class ReadingRecordItem {
     private Long id;
     private String sentence;
     private String comment;
-    private LocalDateTime createdAt;
+    private LocalDateTime recordedAt;
 
-    public ReadingRecordItem(Long id, LocalDateTime createdAt, String sentence, String comment) {
+    public ReadingRecordItem(Long id, LocalDateTime recordedAt, String sentence, String comment) {
         this.id = id;
-        this.createdAt = createdAt;
+        this.recordedAt = recordedAt;
         this.sentence = sentence;
         this.comment = comment;
     }
@@ -19,5 +19,5 @@ public class ReadingRecordItem {
     public Long getId() { return id; }
     public String getSentence() { return sentence; }
     public String getComment() { return comment; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getRecordedAt() { return recordedAt; }
 }

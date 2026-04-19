@@ -14,12 +14,12 @@ public class ReadingRecordResponse {
     private Boolean matched;
     private Long bookId;
     private String coverUrl;
-    private LocalDateTime createdAt;
+    private LocalDateTime recordedAt;
 
     public ReadingRecordResponse(ReadingRecord r) {
         this.id = r.getId();
-        this.createdAt = r.getCreatedAt();
-        
+        this.recordedAt = r.getRecordedAt();
+
         // 책 매칭된 상태인지 확인
         boolean isResolved = r.getMatchStatus() != null &&
                 (r.getMatchStatus() == ReadingRecord.MatchStatus.RESOLVED_AUTO
@@ -35,7 +35,7 @@ public class ReadingRecordResponse {
             this.matched = true;
             this.bookId = book.getId();
             this.coverUrl = book.getCoverUrl();
-            this.createdAt = r.getCreatedAt();
+            this.recordedAt = r.getRecordedAt();
         } else {
             // 매칭되지 않은 상태라면 raw 사용
             this.title = r.getRawTitle();
@@ -45,7 +45,7 @@ public class ReadingRecordResponse {
             this.matched = false;
             this.bookId = null;
             this.coverUrl = null;
-            this.createdAt = r.getCreatedAt();
+            this.recordedAt = r.getRecordedAt();
         }
     }
 
@@ -58,7 +58,7 @@ public class ReadingRecordResponse {
                                  Boolean matched,
                                  Long bookId,
                                  String coverUrl,
-                                 LocalDateTime createdAt) {
+                                 LocalDateTime recordedAt) {
         this.id = id;
         this.title = title;
         this.author = author;
@@ -67,7 +67,7 @@ public class ReadingRecordResponse {
         this.matched = matched;
         this.bookId = bookId;
         this.coverUrl = coverUrl;
-        this.createdAt = createdAt;
+        this.recordedAt = recordedAt;
     }
 
     public static ReadingRecordResponse fromEntity(ReadingRecord record) {
@@ -80,7 +80,7 @@ public class ReadingRecordResponse {
                 record.getBook() != null, // 매칭 여부
                 record.getBook() != null ? record.getBook().getId() : null,
                 record.getBook() != null ? record.getBook().getCoverUrl() : null,
-                record.getCreatedAt()
+                record.getRecordedAt()
         );
     }
 
@@ -92,5 +92,5 @@ public class ReadingRecordResponse {
     public Boolean getMatched() { return matched; }
     public Long getBookId() { return bookId; }
     public String getCoverUrl() { return coverUrl; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getRecordedAt() { return recordedAt; }
 }

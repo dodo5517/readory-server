@@ -6,9 +6,9 @@ import java.time.LocalDateTime;
 @Entity // 이 클래스가 JPA 엔티티임을 선언. DB 테이블과 매핑됨
 @Table(name = "reading_records", // DB에서 이 엔티티가 매핑될 테이블 이름을 지정함
     indexes = {
-            // user_id로 먼저 좁히고 created_at으로 정렬(기본이 desc임)
-            @Index(name = "idx_rr_user_recorded", columnList = "user_id, created_at"),
-            @Index(name = "idx_record_user_book_at_id", columnList = "user_id, book_id, created_at, id")
+            // user_id로 먼저 좁히고 recorded_at으로 정렬(기본이 desc임)
+            @Index(name = "idx_rr_user_recorded", columnList = "user_id, recorded_at"),
+            @Index(name = "idx_record_user_book_at_id", columnList = "user_id, book_id, recorded_at, id")
     })
 public class ReadingRecord {
 
@@ -50,6 +50,10 @@ public class ReadingRecord {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    // 독서 기록 시각 (사용자가 설정하거나 생성 시각으로 초기화됨)
+    @Column(name = "recorded_at", nullable = false)
+    private LocalDateTime recordedAt;
+
     // 수정한 시간
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
@@ -68,6 +72,7 @@ public class ReadingRecord {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (recordedAt == null) recordedAt = LocalDateTime.now();
         if (updatedAt == null) updatedAt = LocalDateTime.now();
         if (matchStatus == null) matchStatus = MatchStatus.PENDING;
     }
@@ -123,6 +128,9 @@ public class ReadingRecord {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getRecordedAt() { return recordedAt; }
+    public void setRecordedAt(LocalDateTime recordedAt) { this.recordedAt = recordedAt; }
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
