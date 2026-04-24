@@ -122,6 +122,23 @@ public class ReadingRecordController {
         return service.getConfirmedBooks(userId, q, pageable, sort);
     }
 
+    // 메인 화면용 - 핀 무시하고 순수 최신순
+    @GetMapping("/me/books/main")
+    public Page<BookWithLastRecordResponse> getMyBooksForMain(
+            HttpServletRequest request,
+            @RequestParam(value = "q", required = false) String q,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size
+    ) {
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증이 필요합니다.");
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+        return service.getConfirmedBooksForMain(userId, q, pageable);
+    }
+
     // 해당 유저가 기록한 책 한 권에 대한 모든 기록 조회
     @GetMapping("/books/{bookId}")
     public BookRecordsPageResponse getBookRecords(

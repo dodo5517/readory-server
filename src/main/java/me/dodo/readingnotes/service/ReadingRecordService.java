@@ -124,6 +124,12 @@ public class ReadingRecordService {
         return readingRecordRepository.findConfirmedBooksByRecent(userId, q, pageable);
     }
 
+    // 메인 화면용 - 핀 무시하고 순수 최신순
+    @Transactional(readOnly = true)
+    public Page<BookWithLastRecordResponse> getConfirmedBooksForMain(Long userId, String q, Pageable pageable) {
+        return readingRecordRepository.findConfirmedBooksForMain(userId, q, pageable);
+    }
+
     // 해당 유저가 기록한 책 한 권에 대한 기록 조회
     @Transactional(readOnly = true)
     public BookRecordsPageResponse getBookRecordsByCursor(Long userId, Long bookId, String cursor, int size) {
