@@ -182,6 +182,27 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
             max(r.recordedAt) desc
         """)
     Page<BookWithLastRecordResponse> findConfirmedBooksByRecent(@Param("userId") Long userId, @Param("q") String q, Pageable pageable);
+    // 최신순 (핀 무시 - 메인 화면용)
+    @Query("""
+        select new me.dodo.readingnotes.dto.book.BookWithLastRecordResponse(
+            b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl, max(r.recordedAt),
+            year(max(r.recordedAt)),
+            (case when exists (
+                select 1 from UserBookPin p where p.user.id = :userId and p.book.id = b.id
+            ) then true else false end)
+        )
+        from ReadingRecord r join r.book b
+        where r.user.id = :userId
+          and r.matchStatus in (me.dodo.readingnotes.domain.ReadingRecord.MatchStatus.RESOLVED_AUTO,
+                                me.dodo.readingnotes.domain.ReadingRecord.MatchStatus.RESOLVED_MANUAL)
+          and (:q is null or :q = ''
+               or lower(b.title) like lower(concat('%', :q, '%'))
+               or lower(b.author) like lower(concat('%', :q, '%')))
+        group by b.id, b.title, b.author, b.isbn10, b.isbn13, b.coverUrl
+        order by max(r.recordedAt) desc
+        """)
+    Page<BookWithLastRecordResponse> findConfirmedBooksForMain(@Param("userId") Long userId, @Param("q") String q, Pageable pageable);
+
     // 제목순
     @Query("""
         select new me.dodo.readingnotes.dto.book.BookWithLastRecordResponse(
