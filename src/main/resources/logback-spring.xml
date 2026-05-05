@@ -23,10 +23,17 @@
         </encoder>
     </appender>
 
-    <!-- 본인 패키지는 DEBUG까지 콘솔에 출력 -->
-    <logger name="me.dodo.readingnotes" level="DEBUG" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
+    <springProfile name="prod">
+        <logger name="me.dodo.readingnotes" level="INFO" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="WARN_FILE"/>
+        </logger>
+    </springProfile>
+    <springProfile name="dev">
+        <logger name="me.dodo.readingnotes" level="DEBUG" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+        </logger>
+    </springProfile>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
