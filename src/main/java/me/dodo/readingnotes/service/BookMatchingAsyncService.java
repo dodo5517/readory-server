@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.ReadingRecord;
@@ -24,13 +25,17 @@ public class BookMatchingAsyncService {
     private final BookMatcherService bookMatcherService;
     private final KakaoBookClient kakaoBookClient;
     private final BookLinkService bookLinkService;
+    private final ObjectMapper objectMapper;
 
     @Autowired
     public BookMatchingAsyncService(BookMatcherService bookMatcherService,
-                                    KakaoBookClient kakaoBookClient, BookLinkService bookLinkService){
+                                    KakaoBookClient kakaoBookClient,
+                                    BookLinkService bookLinkService,
+                                    ObjectMapper objectMapper) {
         this.bookMatcherService = bookMatcherService;
         this.kakaoBookClient = kakaoBookClient;
         this.bookLinkService = bookLinkService;
+        this.objectMapper = objectMapper;
     }
 
     // 책 검색 후 매칭
@@ -96,10 +101,9 @@ public class BookMatchingAsyncService {
 
         bookLinkService.linkRecordAuto(record.getId(), reqDto, result.getScore(), toJsonSafe(snapshot));
     }
-    // 간단 버전: 필요시 Jackson 빈 주입으로 교체(아래 참고)
     private String toJsonSafe(Object obj) {
         try {
-            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
+            return objectMapper.writeValueAsString(obj);
         } catch (Exception e) {
             return null;
         }
