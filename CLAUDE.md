@@ -32,3 +32,9 @@
       - 기존 패턴은 삭제하지 않는다. 출처 형식이 바뀐 경우 구버전 패턴을 남기고 신버전을 추가한다.
       - 이유: sentence_original 기준으로 재정리할 때 구버전 패턴이 없으면 과거 기록에 적용할 수 없다.
    - `EbookSourceCleanerTest.java`: 해당 패턴 테스트 케이스 추가
+
+## 로컬 실행
+./gradlew bootRun --args='--spring.profiles.active=dev'
+
+## 운영 프로파일 (라즈베리파이)
+--spring.profiles.active=prod
