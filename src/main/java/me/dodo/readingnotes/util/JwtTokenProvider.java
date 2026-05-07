@@ -86,7 +86,7 @@ public class JwtTokenProvider {
                     .parseClaimsJws(token); // 예외 없이 파싱되면 유효함.
                 return true;
         } catch (ExpiredJwtException e) {
-            log.error("만료된 토큰입니다: {}",e.getMessage());
+            log.warn("만료된 토큰입니다: {}",e.getMessage());
         } catch (JwtException e) {
             log.error("유효하지 않은 토큰입니다: {}",e.getMessage());
         }
