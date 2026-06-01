@@ -7,17 +7,11 @@ public class EbookSourceCleaner {
     private EbookSourceCleaner() {}
 
     // -----------------------------------------------------------------------
-    // 교보eBook: "「...」중에서 교보eBook에서 자세히 보기:" 로 시작하는 줄
+    // 교보eBook 멀티라인: "[제목]중에서" 줄 바로 다음에 "교보eBook에서 자세히 보기:" 줄이
+    //   이어지는 형식 + 선택적 URL 줄
     // -----------------------------------------------------------------------
-    // "제목"중에서 줄
-    private static final Pattern KYOBO_TITLE_LINE = Pattern.compile(
-            "\\n[^\\n]*중에서\\s*$",
-            Pattern.MULTILINE
-    );
-
-    // 빈 줄 + "교보eBook에서 자세히 보기:" + URL
-    private static final Pattern KYOBO_SOURCE_BLOCK = Pattern.compile(
-            "\\n*교보eBook에서 자세히 보기:[^\\n]*(?:\\nhttps?://\\S+)?",
+    private static final Pattern KYOBO_MULTILINE_BLOCK = Pattern.compile(
+            "\\n[^\\n]*중에서\\s*\\n교보eBook에서 자세히 보기:[^\\n]*(?:\\nhttps?://\\S+)?",
             Pattern.MULTILINE
     );
 
@@ -70,8 +64,7 @@ public class EbookSourceCleaner {
 
         String result = sentence;
         result = KYOBO_INLINE_BLOCK.matcher(result).replaceAll("");
-        result = KYOBO_SOURCE_BLOCK.matcher(result).replaceAll("");
-        result = KYOBO_TITLE_LINE.matcher(result).replaceAll("");
+        result = KYOBO_MULTILINE_BLOCK.matcher(result).replaceAll("");
         result = NAVER_BLOCK.matcher(result).replaceAll("");
         result = MILLIE_INLINE.matcher(result).replaceAll("");
         result = TRAILING_URL.matcher(result).replaceAll("");
