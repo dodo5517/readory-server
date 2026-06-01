@@ -25,6 +25,22 @@ class EbookSourceCleanerTest {
     }
 
     @Test
+    @DisplayName("교보eBook - 인라인 형식(본문과 같은 줄, 콜론 앞 공백, URL 동일 줄)을 제거한다")
+    void kyobo_removesInlineSourceBlockOnSameLine() {
+        String input = "촬영 종료 전날. 자유롭게 데이트를 설계해 상대를 지목할 수 있는 스페셜 데이트권을 두고 경쟁 미션을 수행할 차례였다. " +
+                "〈솔로농장〉의 미션은 흙맛 센스로 유명했다. " +
+                "감 두 사람의 인터내셔널 New Face Book 중에서 교보eBook에서 자세히 보기 : " +
+                "https://ebook-product.kyobobook.co.kr/dig/epd/ebook/480D240567600?auth_token=&appLink=And&sAppYn=N&sPreloadYn=N";
+
+        String result = EbookSourceCleaner.clean(input);
+
+        assertThat(result).isEqualTo(
+                "촬영 종료 전날. 자유롭게 데이트를 설계해 상대를 지목할 수 있는 스페셜 데이트권을 두고 경쟁 미션을 수행할 차례였다. " +
+                "〈솔로농장〉의 미션은 흙맛 센스로 유명했다.");
+        System.out.println(result);
+    }
+
+    @Test
     @DisplayName("교보eBook - URL 없이 출처 줄만 있어도 제거한다")
     void kyobo_removesSourceLineWithoutUrl() {
         String input = "본문 문장입니다.\n\"어떤 책\"중에서 교보eBook에서 자세히 보기:";
