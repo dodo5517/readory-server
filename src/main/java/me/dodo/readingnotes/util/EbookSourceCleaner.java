@@ -7,17 +7,11 @@ public class EbookSourceCleaner {
     private EbookSourceCleaner() {}
 
     // -----------------------------------------------------------------------
-    // 교보eBook: "「...」중에서 교보eBook에서 자세히 보기:" 로 시작하는 줄
+    // 교보eBook 멀티라인: "[제목]중에서" 줄 바로 다음에 "교보eBook에서 자세히 보기:" 줄이
+    //   이어지는 형식 + 선택적 URL 줄
     // -----------------------------------------------------------------------
-    // "제목"중에서 줄
-    private static final Pattern KYOBO_TITLE_LINE = Pattern.compile(
-            "\\n[^\\n]*중에서\\s*$",
-            Pattern.MULTILINE
-    );
-
-    // 빈 줄 + "교보eBook에서 자세히 보기:" + URL
-    private static final Pattern KYOBO_SOURCE_BLOCK = Pattern.compile(
-            "\\n*교보eBook에서 자세히 보기:[^\\n]*(?:\\nhttps?://\\S+)?",
+    private static final Pattern KYOBO_MULTILINE_BLOCK = Pattern.compile(
+            "\\n[^\\n]*중에서\\s*\\n교보eBook에서 자세히 보기:[^\\n]*(?:\\nhttps?://\\S+)?",
             Pattern.MULTILINE
     );
 
@@ -41,6 +35,17 @@ public class EbookSourceCleaner {
     );
 
     // -----------------------------------------------------------------------
+    // 교보eBook 인라인: "[책제목] 중에서 교보eBook에서 자세히 보기 : URL" 이
+    //   본문과 같은 줄에 이어지는 신규 형식 (콜론 앞 공백, URL 동일 줄)
+    // 예시: "...흙맛 센스로 유명했다. 감 두 사람의 인터내셔널 New Face Book 중에서 교보eBook에서 자세히 보기 : https://..."
+    // [^\n.!?。]* 로 마침표 앞까지만 매치해 본문이 잘리는 것을 방지
+    // -----------------------------------------------------------------------
+    private static final Pattern KYOBO_INLINE_BLOCK = Pattern.compile(
+            "[^\\n.!?。]*중에서\\s+교보eBook에서 자세히 보기\\s*:[^\\n]*$",
+            Pattern.MULTILINE
+    );
+
+    // -----------------------------------------------------------------------
     // 공통 URL 후행 줄 제거 (플랫폼 판별 후 남은 URL 처리용 안전망)
     // -----------------------------------------------------------------------
     private static final Pattern TRAILING_URL = Pattern.compile(
@@ -58,8 +63,8 @@ public class EbookSourceCleaner {
         }
 
         String result = sentence;
-        result = KYOBO_SOURCE_BLOCK.matcher(result).replaceAll("");
-        result = KYOBO_TITLE_LINE.matcher(result).replaceAll("");
+        result = KYOBO_INLINE_BLOCK.matcher(result).replaceAll("");
+        result = KYOBO_MULTILINE_BLOCK.matcher(result).replaceAll("");
         result = NAVER_BLOCK.matcher(result).replaceAll("");
         result = MILLIE_INLINE.matcher(result).replaceAll("");
         result = TRAILING_URL.matcher(result).replaceAll("");
