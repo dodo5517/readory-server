@@ -41,6 +41,41 @@ class EbookSourceCleanerTest {
     }
 
     @Test
+    @DisplayName("교보eBook - 개행 후 공백+URL 형식을 제거한다")
+    void kyobo_removesUrlAfterNewlineWithLeadingSpace() {
+        String input = "\"데리고 있을 수 있겠냐고 하는데?\"\n" +
+                " https://ebook-product.kyobobook.co.kr/dig/preview/4801124038339?chl=lib";
+
+        String result = EbookSourceCleaner.clean(input);
+
+        assertThat(result).isEqualTo("\"데리고 있을 수 있겠냐고 하는데?\"");
+        System.out.println(result);
+    }
+
+    @Test
+    @DisplayName("교보eBook 도서관 - \"제목\" 중에서 URL 형식을 제거한다")
+    void kyobo_removesLibraryInlineUrlAfterTitle() {
+        String input = "대서양을 마주하고 자란 강인한 사람들이었... " +
+                "\"바다에서 온 소년\" 중에서 https://induk.dkyobobook.co.kr/content/contentView.ink?brcd=4801124038339";
+
+        String result = EbookSourceCleaner.clean(input);
+
+        assertThat(result).isEqualTo("대서양을 마주하고 자란 강인한 사람들이었...");
+        System.out.println(result);
+    }
+
+    @Test
+    @DisplayName("교보eBook - 인라인 공백+인용부호+URL 형식을 제거한다")
+    void kyobo_removesInlineProductUrl() {
+        String input = "만에 세계적 \" https://product.kyobobook.co.kr/detail/S000219513807#:~:text=%EA%B3%B5%EA%B0%9C";
+
+        String result = EbookSourceCleaner.clean(input);
+
+        assertThat(result).isEqualTo("만에 세계적");
+        System.out.println(result);
+    }
+
+    @Test
     @DisplayName("교보eBook - URL 없이 출처 줄만 있어도 제거한다")
     void kyobo_removesSourceLineWithoutUrl() {
         String input = "본문 문장입니다.\n\"어떤 책\"중에서 교보eBook에서 자세히 보기:";

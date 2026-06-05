@@ -46,10 +46,29 @@ public class EbookSourceCleaner {
     );
 
     // -----------------------------------------------------------------------
+    // 교보eBook 도서관: "[제목]" 중에서 https://[url] 형식 (교보eBook에서 자세히 보기 없이 URL만)
+    // 예시: 대서양을 마주하고 자란 강인한 사람들이었... "바다에서 온 소년" 중에서 https://induk.dkyobobook.co.kr/...
+    // -----------------------------------------------------------------------
+    private static final Pattern KYOBO_LIBRARY_URL_INLINE = Pattern.compile(
+            "[^\\n.!?。]*중에서 https?://\\S+\\s*$",
+            Pattern.MULTILINE
+    );
+
+    // -----------------------------------------------------------------------
+    // 교보eBook 상품 페이지 인라인: [공백]"[공백]https://kyobobook 형식 (개행 없이 인용부호 후 URL)
+    // 예시: 만에 세계적 " https://product.kyobobook.co.kr/detail/S000219513807#:~:text=...
+    // -----------------------------------------------------------------------
+    private static final Pattern KYOBO_PRODUCT_URL_INLINE = Pattern.compile(
+            "[ \\t]+\"?[ \\t]*https?://[^\\s]*kyobobook\\.co\\.kr/\\S*\\s*$",
+            Pattern.MULTILINE
+    );
+
+    // -----------------------------------------------------------------------
     // 공통 URL 후행 줄 제거 (플랫폼 판별 후 남은 URL 처리용 안전망)
+    // 개행 후 선행 공백이 있는 경우도 포함
     // -----------------------------------------------------------------------
     private static final Pattern TRAILING_URL = Pattern.compile(
-            "\\nhttps?://\\S+\\s*$",
+            "\\n[ \\t]*https?://\\S+\\s*$",
             Pattern.MULTILINE
     );
 
@@ -64,6 +83,8 @@ public class EbookSourceCleaner {
 
         String result = sentence;
         result = KYOBO_INLINE_BLOCK.matcher(result).replaceAll("");
+        result = KYOBO_LIBRARY_URL_INLINE.matcher(result).replaceAll("");
+        result = KYOBO_PRODUCT_URL_INLINE.matcher(result).replaceAll("");
         result = KYOBO_MULTILINE_BLOCK.matcher(result).replaceAll("");
         result = NAVER_BLOCK.matcher(result).replaceAll("");
         result = MILLIE_INLINE.matcher(result).replaceAll("");
