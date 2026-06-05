@@ -309,8 +309,7 @@ public class ReadingRecordService {
             int[] result = cleanBatchService.cleanBatch(page, BATCH_SIZE);
             total += result[0];
             updated += result[1];
-            if (result[0] < BATCH_SIZE) break;
-            page++;
+            if (result[1] == 0) break;
         }
 
         log.info("sentence 일괄 정리 완료: 전체={}, 수정={}", total, updated);
