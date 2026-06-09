@@ -82,7 +82,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         long serverTime = System.currentTimeMillis();
 
         // refreshToken → HttpOnly 쿠키로 저장
-        ResponseCookie refreshCookie = CookieUtil.createRefreshTokenCookie(refreshToken, false);
+        ResponseCookie refreshCookie = CookieUtil.createRefreshTokenCookie(refreshToken);
 
         // 헤더에 저장
         response.addHeader("Set-Cookie", refreshCookie.toString());
