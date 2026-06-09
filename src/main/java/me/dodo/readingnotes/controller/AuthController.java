@@ -48,7 +48,7 @@ public class AuthController {
         );
 
         // refreshToken -> HttpOnly 쿠키에 저장
-        ResponseCookie refreshCookie = CookieUtil.createRefreshTokenCookie(result.getRefreshToken(), false);
+        ResponseCookie refreshCookie = CookieUtil.createRefreshTokenCookie(result.getRefreshToken());
         // 헤더에 저장
         httpResponse.addHeader("Set-Cookie", refreshCookie.toString());
 
