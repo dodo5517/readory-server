@@ -5,7 +5,11 @@ import me.dodo.readingnotes.dto.admin.AdminBookStatsResponse;
 import me.dodo.readingnotes.dto.admin.BookDetailResponse;
 import me.dodo.readingnotes.dto.admin.BookListResponse;
 import me.dodo.readingnotes.dto.admin.TopBook;
+import me.dodo.readingnotes.repository.BookCommentRepository;
 import me.dodo.readingnotes.repository.BookRepository;
+import me.dodo.readingnotes.repository.BookSourceLinkRepository;
+import me.dodo.readingnotes.repository.ReadingRecordRepository;
+import me.dodo.readingnotes.repository.UserBookPinRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,10 +23,22 @@ import java.util.List;
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final BookSourceLinkRepository bookSourceLinkRepository;
+    private final UserBookPinRepository userBookPinRepository;
+    private final BookCommentRepository bookCommentRepository;
+    private final ReadingRecordRepository readingRecordRepository;
 
     @Autowired
-    public BookService(BookRepository bookRepository) {
+    public BookService(BookRepository bookRepository,
+                       BookSourceLinkRepository bookSourceLinkRepository,
+                       UserBookPinRepository userBookPinRepository,
+                       BookCommentRepository bookCommentRepository,
+                       ReadingRecordRepository readingRecordRepository) {
         this.bookRepository = bookRepository;
+        this.bookSourceLinkRepository = bookSourceLinkRepository;
+        this.userBookPinRepository = userBookPinRepository;
+        this.bookCommentRepository = bookCommentRepository;
+        this.readingRecordRepository = readingRecordRepository;
     }
 
     // 관리자용 책 목록 조회 (검색 + 삭제된 책 포함 여부)
@@ -59,6 +75,10 @@ public class BookService {
         if (!bookRepository.existsById(id)) {
             throw new IllegalArgumentException("해당 책을 찾을 수 없습니다. id=" + id);
         }
+        readingRecordRepository.detachBook(id);
+        bookSourceLinkRepository.deleteAllByBookId(id);
+        userBookPinRepository.deleteAllByBookId(id);
+        bookCommentRepository.deleteAllByBookId(id);
         bookRepository.deleteById(id);
     }
 
