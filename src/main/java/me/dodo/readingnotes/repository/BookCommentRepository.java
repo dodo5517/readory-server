@@ -2,6 +2,7 @@ package me.dodo.readingnotes.repository;
 
 import me.dodo.readingnotes.domain.BookComment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -11,6 +12,10 @@ import java.util.Optional;
 public interface BookCommentRepository extends JpaRepository<BookComment, Long> {
 
     Optional<BookComment> findByUser_IdAndBook_Id(Long userId, Long bookId);
+
+    @Modifying
+    @Query("DELETE FROM BookComment c WHERE c.book.id = :bookId")
+    void deleteAllByBookId(@Param("bookId") Long bookId);
 
 //    boolean existsByUser_IdAndBook_Id(Long userId, Long bookId);
 
