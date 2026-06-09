@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.repository.UserRepository;
+import me.dodo.readingnotes.util.ApiErrorWriter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,21 +24,21 @@ public class ApiKeyFilter extends OncePerRequestFilter {
     public static final String HEADER_API_KEY = "X-Api-Key";
 
     private final UserRepository userRepository;
-
-    // 정확히 이 경로일 때만 검사
+    private final ObjectMapper objectMapper;
     private final String protectedPath;
 
-    public ApiKeyFilter(UserRepository userRepository, String protectedPath) {
+    public ApiKeyFilter(UserRepository userRepository, ObjectMapper objectMapper, String protectedPath) {
         this.userRepository = userRepository;
+        this.objectMapper = objectMapper;
         this.protectedPath = protectedPath;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        // "/records" 정확 일치일 때만 필터 동작. 그 외 경로는 전부 PASS.
         return !protectedPath.equals(path);
     }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -44,19 +46,19 @@ public class ApiKeyFilter extends OncePerRequestFilter {
         String apiKey = request.getHeader(HEADER_API_KEY);
 
         if (apiKey == null || apiKey.isBlank()) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "X-Api-Key가 누락되었습니다.");
+            ApiErrorWriter.writeApiError(response, objectMapper, 401, "API_KEY_MISSING", "X-Api-Key가 누락되었습니다.");
             return;
         }
 
         Optional<User> userOpt = userRepository.findByApiKey(apiKey);
         if (userOpt.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "잘못된 API Key 입니다.");
+            ApiErrorWriter.writeApiError(response, objectMapper, 401, "API_KEY_INVALID", "잘못된 API Key 입니다.");
             return;
         }
 
-        // SecurityContext에 인증 정보 set
         UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(userOpt.get(), null, List.of(new SimpleGrantedAuthority(userOpt.get().getRole())));
+                new UsernamePasswordAuthenticationToken(userOpt.get(), null,
+                        List.of(new SimpleGrantedAuthority(userOpt.get().getRole())));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

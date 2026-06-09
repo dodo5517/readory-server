@@ -1,7 +1,9 @@
 package me.dodo.readingnotes.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.service.CustomOAuth2UserService;
+import me.dodo.readingnotes.util.ApiErrorWriter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,7 +61,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           CustomOAuth2UserService customOAuth2UserService) throws Exception {
+                                           CustomOAuth2UserService customOAuth2UserService,
+                                           ObjectMapper objectMapper) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))  // CORS 활성화
                 .csrf(csrf -> csrf.disable()) // H2나 Postman 테스트용
@@ -69,11 +72,8 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable())    // 기본 httpBasic 비활성화
                 // 인증 실패 시 302 대신 401 반환
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(401);
-                            response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"로그인이 필요합니다.\"}");
-                        })
+                        .authenticationEntryPoint((request, response, authException) ->
+                                ApiErrorWriter.writeApiError(response, objectMapper, 401, "UNAUTHORIZED", "로그인이 필요합니다."))
                 )
                 // 이쪽 url들은 권한 없이 들어갈 수 있음
                 .authorizeHttpRequests(auth -> auth
@@ -92,6 +92,7 @@ public class SecurityConfig {
         // API Key 필터, /api/records 로 시작하는 경로에만 적용함.
         ApiKeyFilter apiKeyFilter = new ApiKeyFilter(
                 userRepository,
+                objectMapper,
                 "/api/records"
         );
 
