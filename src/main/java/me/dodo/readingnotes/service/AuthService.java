@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import me.dodo.readingnotes.domain.RefreshToken;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.dto.auth.AuthResult;
+import me.dodo.readingnotes.exception.AuthException;
 import me.dodo.readingnotes.repository.RefreshTokenRepository;
 import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.util.DeviceInfoParser;
@@ -53,16 +54,16 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     userAuthLogService.logLoginFail(null, email, "LOCAL", "존재하지 않는 이메일입니다.", httpRequest);
-                    return new IllegalArgumentException("존재하지 않는 이메일입니다.");
+                    return new AuthException("존재하지 않는 이메일입니다.");
                 });
 
         if(user.getUserStatus() == User.UserStatus.BLOCKED){
             userAuthLogService.logLoginFail(user, email, "LOCAL", "차단된 계정입니다.", httpRequest);
-            throw new IllegalArgumentException("차단된 계정입니다.");
+            throw new AuthException("차단된 계정입니다.");
         }
         if(!passwordEncoder.matches(password,user.getPassword())){ // 평문 비교가 아닌 해시 비교
             userAuthLogService.logLoginFail(user, email, "LOCAL", "비밀번호가 일치하지 않습니다.", httpRequest);
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new AuthException("비밀번호가 일치하지 않습니다.");
         }
         log.info("로그인 성공");
 
@@ -132,22 +133,26 @@ public class AuthService {
     // 토큰 재발급
     @Transactional
     public AuthResult reissueAccessToken(String refreshToken, String userAgent) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new AuthException("refresh token이 쿠키에 존재하지 않습니다.");
+        }
+
         // 토큰 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new IllegalArgumentException("유효하지 않거나 만료된 refresh_token 입니다.");
+            throw new AuthException("유효하지 않거나 만료된 refresh_token 입니다.");
         }
 
         // DB에서 토큰 조회
         RefreshToken tokenInDb = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 refresh_token 입니다."));
+                .orElseThrow(() -> new AuthException("존재하지 않는 refresh_token 입니다."));
 
         // 디바이스 정보 파싱
         String deviceInfo = DeviceInfoParser.extractDeviceInfo(userAgent);
         log.debug("deviceInfo: {}", deviceInfo);
-        
+
         // DB에서 device_info 검증
         if (!tokenInDb.getDeviceInfo().equals(deviceInfo)) {
-            throw new IllegalArgumentException("기기 정보가 일치하지 않습니다.");
+            throw new AuthException("기기 정보가 일치하지 않습니다.");
         }
 
         User user = tokenInDb.getUser();
