@@ -314,6 +314,14 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
             "WHERE r.id = :id")
     Optional<ReadingRecord> findByIdForAdmin(@Param("id") Long id);
 
+    // 책 영구 삭제 시 연결 해제 (기록 보존, book_id만 null로 초기화)
+    @Modifying
+    @Query("UPDATE ReadingRecord r SET r.book = null, " +
+            "r.matchStatus = me.dodo.readingnotes.domain.ReadingRecord.MatchStatus.PENDING, " +
+            "r.matchedAt = null, r.updatedAt = CURRENT_TIMESTAMP " +
+            "WHERE r.book.id = :bookId")
+    void detachBook(@Param("bookId") Long bookId);
+
     // ── 통계 쿼리 ─────────────────────────────────────────────
 
     // 매칭 상태별 집계
