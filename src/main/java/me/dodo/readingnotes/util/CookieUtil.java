@@ -18,7 +18,7 @@ public class CookieUtil {
                 .httpOnly(true)
                 .secure(cookieSecure)  // 운영 시에는 true로 해야 함
                 .path("/") // 모든 경로에 쿠키 전송
-                .maxAge(7 * 24 * 60 * 60) // 7일
+                .maxAge(30L * 24 * 60 * 60) // 30일
                 .sameSite("Strict") // CSRF 방지
                 .build();
     }
