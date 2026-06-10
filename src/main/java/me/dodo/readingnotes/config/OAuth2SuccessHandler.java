@@ -8,6 +8,7 @@ import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.util.CookieUtil;
 import me.dodo.readingnotes.util.DeviceInfoParser;
 import me.dodo.readingnotes.util.JwtTokenProvider;
+import me.dodo.readingnotes.util.TokenHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +20,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -73,7 +76,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         // DB에 refreshToken 저장
         try {
-            refreshTokenRepository.upsert(user.getId(), deviceInfo, refreshToken, refreshExpiry);
+            refreshTokenRepository.upsert(user.getId(), deviceInfo, TokenHasher.sha256Hex(refreshToken), refreshExpiry);
         } catch (Exception e) {
             log.error("Failed to upsert refresh token", e);
         }
@@ -89,13 +92,14 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         // 헤더에 저장
         response.addHeader("Set-Cookie", refreshCookie.toString());
 
+        String fragment = "accessToken=" + URLEncoder.encode(accessToken, StandardCharsets.UTF_8)
+                + "&expiresIn=" + expiresIn
+                + "&serverTime=" + serverTime;
         String redirectUrl = UriComponentsBuilder
                 .fromUriString(frontendUrl)
                 .path("/oauth/callback")
-                .queryParam("accessToken", accessToken)
-                .queryParam("expiresIn", expiresIn)
-                .queryParam("serverTime", serverTime)
-                .build()
+                .fragment(fragment)
+                .build(true)
                 .toUriString();
 
         response.sendRedirect(redirectUrl);

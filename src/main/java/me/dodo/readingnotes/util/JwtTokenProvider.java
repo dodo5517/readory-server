@@ -36,8 +36,8 @@ public class JwtTokenProvider {
     // 30분 =  1000 * 60 * 30;
     // 테스트 5초 = 1000 * 5 * 1;
     private final long accessTokenValidity = 1000 * 60 * 30;
-    // 7일
-    private final long refreshTokenValidity = 1000L * 60 * 60 * 24 * 7;
+    // 30일
+    private final long refreshTokenValidity = 1000L * 60 * 60 * 24 * 30;
 
     // Acess Token 생성
     public String createAccessToken(User user) {

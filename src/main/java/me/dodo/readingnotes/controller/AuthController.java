@@ -100,12 +100,16 @@ public class AuthController {
     @PostMapping("/reissue")
     public ResponseEntity<ApiResponse<AuthResponse>> reissueUser(
             @CookieValue(value = "refreshToken", required = false) String refreshToken,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         log.debug("토큰 재발급 요청");
 
         String userAgent = httpRequest.getHeader("User-Agent");
 
         AuthResult result = authService.reissueAccessToken(refreshToken, userAgent);
+
+        ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(result.getRefreshToken());
+        httpResponse.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         AuthResponse authResponse = new AuthResponse("토큰 재발급 성공", new UserResponse(result.getUser()),
                 result.getAccessToken(), null, result.getExpiresIn(), result.getServerTime());
