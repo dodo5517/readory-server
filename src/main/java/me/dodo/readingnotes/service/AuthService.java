@@ -9,6 +9,7 @@ import me.dodo.readingnotes.repository.RefreshTokenRepository;
 import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.util.DeviceInfoParser;
 import me.dodo.readingnotes.util.JwtTokenProvider;
+import me.dodo.readingnotes.util.TokenHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.LocalDateTime;
 
@@ -80,8 +82,8 @@ public class AuthService {
         LocalDateTime refreshExpiry = jwtTokenProvider.getExpirationDate(refreshToken)
                 .toInstant().atZone(ZoneId.of("Asia/Seoul")).toLocalDateTime();
 
-        // DB에 저장(쿼리에서 update or insert)
-        refreshTokenRepository.upsert(user.getId(), deviceInfo, refreshToken, refreshExpiry);
+        // DB에 저장(쿼리에서 update or insert) — 해시값만 저장, 평문은 쿠키로만 전달
+        refreshTokenRepository.upsert(user.getId(), deviceInfo, TokenHasher.sha256Hex(refreshToken), refreshExpiry);
 
         // access 토큰 만료까지 남은 시간
         long expiresIn = jwtTokenProvider.getRemainingSeconds(accessToken);
@@ -137,33 +139,46 @@ public class AuthService {
             throw new AuthException("refresh token이 쿠키에 존재하지 않습니다.");
         }
 
-        // 토큰 유효성 검증
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new AuthException("유효하지 않거나 만료된 refresh_token 입니다.");
         }
 
-        // DB에서 토큰 조회
-        RefreshToken tokenInDb = refreshTokenRepository.findByToken(refreshToken)
+        // DB에서 해시로 조회
+        RefreshToken tokenInDb = refreshTokenRepository.findByToken(TokenHasher.sha256Hex(refreshToken))
                 .orElseThrow(() -> new AuthException("존재하지 않는 refresh_token 입니다."));
 
-        // 디바이스 정보 파싱
         String deviceInfo = DeviceInfoParser.extractDeviceInfo(userAgent);
         log.debug("deviceInfo: {}", deviceInfo);
 
-        // DB에서 device_info 검증
         if (!tokenInDb.getDeviceInfo().equals(deviceInfo)) {
             throw new AuthException("기기 정보가 일치하지 않습니다.");
         }
 
+        // DB 만료 검증
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime expiryDate = tokenInDb.getExpiryDate();
+        if (now.isAfter(expiryDate)) {
+            throw new AuthException("만료된 refresh_token 입니다. 다시 로그인해 주세요.");
+        }
+
         User user = tokenInDb.getUser();
         String newAccessToken = jwtTokenProvider.createAccessToken(user);
-
-        // access 토큰 만료까지 남은 시간
         long expiresIn = jwtTokenProvider.getRemainingSeconds(newAccessToken);
-        // 서버 시간
         long serverTime = System.currentTimeMillis();
 
-        // 필요 시 refreshToken 재발급
-        return new AuthResult(user, newAccessToken, refreshToken, expiresIn, serverTime);
+        // 남은 수명 < 23일이면 회전
+        long remainingDays = Duration.between(now, expiryDate).toDays();
+        String resultRefreshToken;
+        if (remainingDays < 23) {
+            String newRefreshToken = jwtTokenProvider.createRefreshToken();
+            LocalDateTime newExpiry = LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(30);
+            refreshTokenRepository.upsert(user.getId(), deviceInfo,
+                    TokenHasher.sha256Hex(newRefreshToken), newExpiry);
+            resultRefreshToken = newRefreshToken;
+        } else {
+            resultRefreshToken = refreshToken;
+        }
+
+        return new AuthResult(user, newAccessToken, resultRefreshToken, expiresIn, serverTime);
     }
 }
