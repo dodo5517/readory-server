@@ -11,7 +11,6 @@ import me.dodo.readingnotes.dto.user.UserResponse;
 import me.dodo.readingnotes.exception.AuthException;
 import me.dodo.readingnotes.service.AuthService;
 import me.dodo.readingnotes.util.CookieUtil;
-import me.dodo.readingnotes.util.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -24,12 +23,12 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final CookieUtil cookieUtil;
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
-    public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider) {
+    public AuthController(AuthService authService, CookieUtil cookieUtil) {
         this.authService = authService;
-        this.jwtTokenProvider = jwtTokenProvider;
+        this.cookieUtil = cookieUtil;
     }
 
     // 일반 로그인
@@ -47,7 +46,7 @@ public class AuthController {
                 userAgent
         );
 
-        ResponseCookie refreshCookie = CookieUtil.createRefreshTokenCookie(result.getRefreshToken());
+        ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(result.getRefreshToken());
         httpResponse.addHeader("Set-Cookie", refreshCookie.toString());
 
         AuthResponse authResponse = new AuthResponse("로그인 성공", new UserResponse(result.getUser()),
@@ -71,7 +70,7 @@ public class AuthController {
 
         authService.logoutUser(userId, userAgent);
 
-        ResponseCookie deleteCookie = CookieUtil.deleteRefreshTokenCookie();
+        ResponseCookie deleteCookie = cookieUtil.deleteRefreshTokenCookie();
         httpResponse.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
 
         return ResponseEntity.ok(ApiResponse.success("로그아웃 되었습니다."));
@@ -91,7 +90,7 @@ public class AuthController {
 
         authService.logoutAllDevices(userId);
 
-        ResponseCookie deleteCookie = CookieUtil.deleteRefreshTokenCookie();
+        ResponseCookie deleteCookie = cookieUtil.deleteRefreshTokenCookie();
         httpResponse.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
 
         return ResponseEntity.ok(ApiResponse.success("모든 기기에서 로그아웃 되었습니다."));

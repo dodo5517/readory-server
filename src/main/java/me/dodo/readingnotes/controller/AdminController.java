@@ -41,13 +41,14 @@ import java.util.Map;
 public class AdminController {
 
     private final AuthService authService;
-    private UserService userService;
-    private S3Service s3Service;
-    private LogService logService;
-    private BookService bookService;
-    private ReadingRecordService readingRecordService;
-    private ImageResizer imageResizer;
-    private NoticeService noticeService;
+    private final UserService userService;
+    private final S3Service s3Service;
+    private final LogService logService;
+    private final BookService bookService;
+    private final ReadingRecordService readingRecordService;
+    private final ImageResizer imageResizer;
+    private final NoticeService noticeService;
+    private final CookieUtil cookieUtil;
 
     public AdminController(UserService userService,
                            S3Service s3Service, AuthService authService,
@@ -55,7 +56,8 @@ public class AdminController {
                            BookService bookService,
                            ReadingRecordService readingRecordService,
                            ImageResizer imageResizer,
-                           NoticeService noticeService) {
+                           NoticeService noticeService,
+                           CookieUtil cookieUtil) {
         this.userService = userService;
         this.s3Service = s3Service;
         this.authService = authService;
@@ -64,6 +66,7 @@ public class AdminController {
         this.readingRecordService = readingRecordService;
         this.imageResizer = imageResizer;
         this.noticeService = noticeService;
+        this.cookieUtil = cookieUtil;
     }
 
     // ##############################
@@ -75,7 +78,7 @@ public class AdminController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String provider,
             @RequestParam(required = false) String role,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable, // default size=10
             HttpServletRequest request) {
         Long adminId = extractAdminId(request);
         userService.assertAdmin(adminId);
@@ -113,11 +116,11 @@ public class AdminController {
     @PostMapping("/users/{id}/reset")
     public ResponseEntity<ApiResponse<String>> userReset(@PathVariable Long id,
                                                           HttpServletRequest request,
-                                                          HttpServletResponse httpResponse) throws Exception {
+                                                          HttpServletResponse httpResponse) {
         Long adminId = extractAdminId(request);
         userService.assertAdmin(adminId);
         authService.logoutAllDevices(id);
-        ResponseCookie deleteCookie = CookieUtil.deleteRefreshTokenCookie();
+        ResponseCookie deleteCookie = cookieUtil.deleteRefreshTokenCookie();
         httpResponse.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
         String newPw = userService.reset(id);
         return ResponseEntity.ok(ApiResponse.success("인증이 초기화되었습니다.", newPw));
@@ -262,7 +265,7 @@ public class AdminController {
     public ApiResponse<PageResponse<BookListResponse>> getAllBooks(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false, defaultValue = "false") Boolean includeDeleted,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable, // default size=10
             HttpServletRequest request) {
         Long adminId = extractAdminId(request);
         userService.assertAdmin(adminId);

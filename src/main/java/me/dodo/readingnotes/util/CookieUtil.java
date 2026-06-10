@@ -2,13 +2,18 @@ package me.dodo.readingnotes.util;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
+import org.springframework.stereotype.Component;
 
+@Component
 public class CookieUtil {
 
-    @Value("${cookie.secure}")
-    static boolean cookieSecure;
+    private final boolean cookieSecure;
 
-    public static ResponseCookie createRefreshTokenCookie(String refreshToken) {
+    public CookieUtil(@Value("${cookie.secure}") boolean cookieSecure) {
+        this.cookieSecure = cookieSecure;
+    }
+
+    public ResponseCookie createRefreshTokenCookie(String refreshToken) {
         return ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
                 .secure(cookieSecure)  // 운영 시에는 true로 해야 함
@@ -18,7 +23,7 @@ public class CookieUtil {
                 .build();
     }
 
-    public static ResponseCookie deleteRefreshTokenCookie() {
+    public ResponseCookie deleteRefreshTokenCookie() {
         return ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
                 .secure(cookieSecure)
