@@ -14,6 +14,7 @@ import me.dodo.readingnotes.service.S3Service;
 import me.dodo.readingnotes.service.UserService;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.util.ImageResizer;
+import me.dodo.readingnotes.util.ImageValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -62,6 +63,9 @@ public class UserController {
         Long userId = resolveUserId(httpRequest);
 
         userService.deleteProfileImage(userId);
+
+        ImageValidator.validateMagicBytes(image);
+        ImageValidator.validateDimensions(image);
 
         byte[] resizedImage = imageResizer.resizeImageKeepRatio(image);
 
