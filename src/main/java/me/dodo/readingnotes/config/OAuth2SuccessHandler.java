@@ -2,7 +2,6 @@ package me.dodo.readingnotes.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import me.dodo.readingnotes.domain.RefreshToken;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.repository.RefreshTokenRepository;
 import me.dodo.readingnotes.repository.UserRepository;
@@ -29,6 +28,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final CookieUtil cookieUtil;
     private static final Logger log = LoggerFactory.getLogger(OAuth2SuccessHandler.class);
 
     @Value("${frontend.url}")
@@ -37,10 +37,12 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     public OAuth2SuccessHandler(final JwtTokenProvider jwtTokenProvider,
                                 final UserRepository userRepository,
-                                final RefreshTokenRepository refreshTokenRepository) {
+                                final RefreshTokenRepository refreshTokenRepository,
+                                final CookieUtil cookieUtil) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.cookieUtil = cookieUtil;
     }
 
     @Override
@@ -63,7 +65,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String deviceInfo = DeviceInfoParser.extractDeviceInfo(userAgent);
         log.debug("deviceInfo: {}", deviceInfo);
 
-        log.debug("user: {}", user.toString());
+//        log.debug("user: {}", user.toString());
 
         // refreshExpiry의 Date 타입을 LocalDateTime으로 변환(로그인 하는 시점에 지정하므로 공통부분임)
         LocalDateTime refreshExpiry = jwtTokenProvider.getExpirationDate(refreshToken)
@@ -82,13 +84,13 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         long serverTime = System.currentTimeMillis();
 
         // refreshToken → HttpOnly 쿠키로 저장
-        ResponseCookie refreshCookie = CookieUtil.createRefreshTokenCookie(refreshToken);
+        ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(refreshToken);
 
         // 헤더에 저장
         response.addHeader("Set-Cookie", refreshCookie.toString());
 
         String redirectUrl = UriComponentsBuilder
-                .fromHttpUrl(frontendUrl)
+                .fromUriString(frontendUrl)
                 .path("/oauth/callback")
                 .queryParam("accessToken", accessToken)
                 .queryParam("expiresIn", expiresIn)
