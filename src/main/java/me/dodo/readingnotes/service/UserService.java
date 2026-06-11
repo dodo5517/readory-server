@@ -51,9 +51,7 @@ public class UserService {
 
         // api_key
         user.setApiKey(ApiKeyGenerator.generate()); // api_key 생성
-        if (user.getApiKey() != null){
-//            log.info("api_key:" + user.getApiKey().substring(0,8));
-        } else{
+        if (user.getApiKey() == null){
             log.warn("api_key가 null임.");
         }
 
@@ -142,11 +140,9 @@ public class UserService {
             throw new PasswordMismatchException("기존 비밀번호가 일치하지 않습니다.");
         }
 
-        // 기존 user 정보 가져와서 담기
-        User newUser = user;
         // 새로운 비밀번호 해싱 후 저장
-        newUser.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(newUser); // DB에 저장
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user); // DB에 저장
 
         return true;
     }
@@ -161,11 +157,9 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
-        // 기존 user 정보 가져와서 담기
-        User newUser = user;
         // 새로운 비밀번호 해싱 후 저장
-        newUser.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(newUser); // DB에 저장
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user); // DB에 저장
 
         return true;
     }
@@ -241,7 +235,6 @@ public class UserService {
     // 유저 권한(역할) 수정
     @Transactional
     public void changeUserRole(Long userId, String role) {
-        System.out.println(role);
         if (role == null) {
             throw new IllegalArgumentException("role이 없습니다.");
         }
