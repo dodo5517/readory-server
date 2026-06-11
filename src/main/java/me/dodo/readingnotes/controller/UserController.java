@@ -14,6 +14,7 @@ import me.dodo.readingnotes.service.S3Service;
 import me.dodo.readingnotes.service.UserService;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.util.ImageResizer;
+import me.dodo.readingnotes.util.ImageValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -60,6 +61,19 @@ public class UserController {
     public ApiResponse<String> uploadProfileImage(@RequestParam("image") MultipartFile image,
                                                    HttpServletRequest httpRequest) throws Exception {
         Long userId = resolveUserId(httpRequest);
+
+        if (image == null || image.isEmpty()) {
+            throw new IllegalArgumentException("이미지 파일이 비어 있습니다.");
+        }
+        if (image.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("이미지 크기는 5MB를 초과할 수 없습니다.");
+        }
+        String contentType = image.getContentType();
+        if (!"image/jpeg".equals(contentType) && !"image/png".equals(contentType) && !"image/webp".equals(contentType)) {
+            throw new IllegalArgumentException("지원하지 않는 이미지 형식입니다.");
+        }
+        ImageValidator.validateMagicBytes(image);
+        ImageValidator.validateDimensions(image);
 
         userService.deleteProfileImage(userId);
 

@@ -81,6 +81,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/auth/**", "/api/login/**","/oauth2/**", "/login/**").permitAll()
                     .requestMatchers("/api/notice").permitAll()  // 공지 조회는 인증 불필요
 //                    .requestMatchers("/records/me", "/records/me/**").authenticated()
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth

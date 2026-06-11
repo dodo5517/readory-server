@@ -51,9 +51,7 @@ public class UserService {
 
         // api_key
         user.setApiKey(ApiKeyGenerator.generate()); // api_key 생성
-        if (user.getApiKey() != null){
-//            log.info("api_key:" + user.getApiKey().substring(0,8));
-        } else{
+        if (user.getApiKey() == null){
             log.warn("api_key가 null임.");
         }
 
@@ -117,7 +115,7 @@ public class UserService {
 
     // 유저 이름 수정
     @Transactional
-    public boolean updateUsername(Long userId, String newUsername) {
+    public void updateUsername(Long userId, String newUsername) {
         // 유저 존재 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
@@ -126,13 +124,11 @@ public class UserService {
 
         user.setUsername(newUsername); // 새로운 유저이름 저장
         userRepository.save(user); // DB에 저장
-
-        return true;
     }
-    
+
     // 유저 비밀번호 수정(본인)
     @Transactional
-    public boolean updatePassword(Long userId, String currentPassword, String newPassword) {
+    public void updatePassword(Long userId, String currentPassword, String newPassword) {
         // 유저 존재 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
@@ -142,18 +138,14 @@ public class UserService {
             throw new PasswordMismatchException("기존 비밀번호가 일치하지 않습니다.");
         }
 
-        // 기존 user 정보 가져와서 담기
-        User newUser = user;
         // 새로운 비밀번호 해싱 후 저장
-        newUser.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(newUser); // DB에 저장
-
-        return true;
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user); // DB에 저장
     }
 
     // 유저 비밀번호 수정(관리자)
     @Transactional
-    public boolean updatePasswordAdmin(Long userId, String newPassword) {
+    public void updatePasswordAdmin(Long userId, String newPassword) {
         if(newPassword == null){
             throw new IllegalArgumentException("password가 없습니다.");
         }
@@ -161,13 +153,9 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
-        // 기존 user 정보 가져와서 담기
-        User newUser = user;
         // 새로운 비밀번호 해싱 후 저장
-        newUser.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(newUser); // DB에 저장
-
-        return true;
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user); // DB에 저장
     }
 
     // 유저 계정 초기화
@@ -241,7 +229,6 @@ public class UserService {
     // 유저 권한(역할) 수정
     @Transactional
     public void changeUserRole(Long userId, String role) {
-        System.out.println(role);
         if (role == null) {
             throw new IllegalArgumentException("role이 없습니다.");
         }
