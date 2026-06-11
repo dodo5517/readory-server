@@ -7,6 +7,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+// S3 → Supabase Storage 재전환 대비용. 현재 미사용(S3Service 사용 중).
 //@Service
 public class SupabaseStorageService {
 
