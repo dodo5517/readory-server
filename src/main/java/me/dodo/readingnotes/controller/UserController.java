@@ -62,10 +62,20 @@ public class UserController {
                                                    HttpServletRequest httpRequest) throws Exception {
         Long userId = resolveUserId(httpRequest);
 
-        userService.deleteProfileImage(userId);
-
+        if (image == null || image.isEmpty()) {
+            throw new IllegalArgumentException("이미지 파일이 비어 있습니다.");
+        }
+        if (image.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("이미지 크기는 5MB를 초과할 수 없습니다.");
+        }
+        String contentType = image.getContentType();
+        if (!"image/jpeg".equals(contentType) && !"image/png".equals(contentType) && !"image/webp".equals(contentType)) {
+            throw new IllegalArgumentException("지원하지 않는 이미지 형식입니다.");
+        }
         ImageValidator.validateMagicBytes(image);
         ImageValidator.validateDimensions(image);
+
+        userService.deleteProfileImage(userId);
 
         byte[] resizedImage = imageResizer.resizeImageKeepRatio(image);
 
