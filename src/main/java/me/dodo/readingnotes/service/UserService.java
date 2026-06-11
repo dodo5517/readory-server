@@ -115,7 +115,7 @@ public class UserService {
 
     // 유저 이름 수정
     @Transactional
-    public boolean updateUsername(Long userId, String newUsername) {
+    public void updateUsername(Long userId, String newUsername) {
         // 유저 존재 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
@@ -124,13 +124,11 @@ public class UserService {
 
         user.setUsername(newUsername); // 새로운 유저이름 저장
         userRepository.save(user); // DB에 저장
-
-        return true;
     }
-    
+
     // 유저 비밀번호 수정(본인)
     @Transactional
-    public boolean updatePassword(Long userId, String currentPassword, String newPassword) {
+    public void updatePassword(Long userId, String currentPassword, String newPassword) {
         // 유저 존재 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
@@ -143,13 +141,11 @@ public class UserService {
         // 새로운 비밀번호 해싱 후 저장
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user); // DB에 저장
-
-        return true;
     }
 
     // 유저 비밀번호 수정(관리자)
     @Transactional
-    public boolean updatePasswordAdmin(Long userId, String newPassword) {
+    public void updatePasswordAdmin(Long userId, String newPassword) {
         if(newPassword == null){
             throw new IllegalArgumentException("password가 없습니다.");
         }
@@ -160,8 +156,6 @@ public class UserService {
         // 새로운 비밀번호 해싱 후 저장
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user); // DB에 저장
-
-        return true;
     }
 
     // 유저 계정 초기화
