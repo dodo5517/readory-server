@@ -14,7 +14,6 @@ import me.dodo.readingnotes.dto.reading.ReadingRecordResponse;
 import me.dodo.readingnotes.exception.AuthException;
 import me.dodo.readingnotes.service.ReadingCalendarService;
 import me.dodo.readingnotes.service.ReadingRecordService;
-import me.dodo.readingnotes.util.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
@@ -29,15 +28,18 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/records")
 public class ReadingRecordController {
     private static final Logger log = LoggerFactory.getLogger(ReadingRecordController.class);
+    private static final int MAX_SIZE = 30;
+
+    private int clampSize(int size) {
+        return Math.min(Math.max(size, 1), MAX_SIZE);
+    }
 
     private final ReadingRecordService service;
-    private final JwtTokenProvider jwtTokenProvider;
     private final ReadingCalendarService calendarService;
 
-    public ReadingRecordController(ReadingRecordService service, JwtTokenProvider jwtTokenProvider,
+    public ReadingRecordController(ReadingRecordService service,
                                    ReadingCalendarService calendarService) {
         this.service = service;
-        this.jwtTokenProvider = jwtTokenProvider;
         this.calendarService = calendarService;
     }
 
@@ -66,6 +68,7 @@ public class ReadingRecordController {
             HttpServletRequest request,
             @RequestParam(value = "size", defaultValue = "3") int size) {
         Long userId = resolveUserId(request);
+        size = clampSize(size);
         List<ReadingRecord> list = service.getLatestRecords(userId, size);
         log.debug("list: {}", list.toString());
         return ApiResponse.success(list.stream().map(ReadingRecordResponse::new).collect(Collectors.toList()));
@@ -92,6 +95,7 @@ public class ReadingRecordController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "sort", defaultValue = "recent") String sort) {
         Long userId = resolveUserId(request);
+        size = clampSize(size);
         Pageable pageable = PageRequest.of(page, size);
         return ApiResponse.success(PageResponse.from(service.getConfirmedBooks(userId, q, pageable, sort)));
     }
@@ -104,6 +108,7 @@ public class ReadingRecordController {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         Long userId = resolveUserId(request);
+        size = clampSize(size);
         Pageable pageable = PageRequest.of(page, size);
         return ApiResponse.success(PageResponse.from(service.getConfirmedBooksForMain(userId, q, pageable)));
     }
@@ -143,6 +148,7 @@ public class ReadingRecordController {
             @RequestParam(value = "sort", defaultValue = "desc") String sort,
             HttpServletRequest request) {
         Long userId = resolveUserId(request);
+        size = clampSize(size);
         Sort order = "asc".equalsIgnoreCase(sort)
                 ? Sort.by("recordedAt").ascending()
                 : Sort.by("recordedAt").descending();
@@ -161,6 +167,7 @@ public class ReadingRecordController {
             @RequestParam(value = "sort", defaultValue = "desc") String sort,
             HttpServletRequest request) {
         Long userId = resolveUserId(request);
+        size = clampSize(size);
         Sort order = "asc".equalsIgnoreCase(sort)
                 ? Sort.by("recordedAt").ascending()
                 : Sort.by("recordedAt").descending();
