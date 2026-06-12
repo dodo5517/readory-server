@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -99,7 +100,8 @@ public class CustomOAuth2UserService implements
 
         // 일반 회원가입한 이메일로 로그인 시 소셜 로그인 거부
         if (existingUser != null && (existingUser.getProvider() == null || !existingUser.getProvider().equals(registrationId))) {
-            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+            userAuthLogService.logLoginFail(existingUser, email, registrationId, "이미 가입된 이메일입니다.", httpRequest);
+            throw new OAuth2AuthenticationException(new OAuth2Error("email_already_registered"), "이미 가입된 이메일입니다.");
         }
 
         // DB에 저장 (신규면 api_key 생성 후 저장)
