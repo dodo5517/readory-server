@@ -113,6 +113,26 @@ public class UserService {
         }
 
     }
+
+    // 기존 이미지 삭제 + 새 이미지 URL 저장을 단일 트랜잭션으로 처리
+    @Transactional
+    public void replaceProfileImage(Long userId, String newImageUrl) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
+        String oldImageUrl = user.getProfileImageUrl();
+        user.setProfileImageUrl(newImageUrl);
+        userRepository.save(user);
+
+        if (oldImageUrl != null) {
+            try {
+                s3Service.deleteFile(extractKeyFromUrl(oldImageUrl));
+            } catch (Exception e) {
+                log.warn("기존 프로필 이미지 삭제 실패: {}", oldImageUrl, e);
+            }
+        }
+    }
+
     private String extractKeyFromUrl(String imageUrl) {
         return imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
     }
@@ -120,14 +140,17 @@ public class UserService {
     // 유저 이름 수정
     @Transactional
     public void updateUsername(Long userId, String newUsername) {
-        // 유저 존재 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
+        if (!user.getUsername().equals(newUsername) && userRepository.existsByUsername(newUsername)) {
+            throw new IllegalArgumentException("이미 사용 중인 이름입니다.");
+        }
+
         log.debug("newUsername: {}", newUsername);
 
-        user.setUsername(newUsername); // 새로운 유저이름 저장
-        userRepository.save(user); // DB에 저장
+        user.setUsername(newUsername);
+        userRepository.save(user);
     }
 
     // 유저 비밀번호 수정(본인)

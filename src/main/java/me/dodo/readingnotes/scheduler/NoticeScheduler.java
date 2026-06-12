@@ -24,15 +24,9 @@ public class NoticeScheduler {
     @Scheduled(cron = "0 0 3 * * *")
     @Transactional
     public void expireOldNotices() {
-        LocalDateTime threshold = LocalDateTime.now().minusDays(30);
-
-        noticeRepository.findAll().stream()
-                .filter(n -> n.isEnabled() && n.getCreatedAt().isBefore(threshold))
-                .forEach(n -> {
-                    n.setEnabled(false);
-                    n.setUpdatedAt(LocalDateTime.now());
-                    noticeRepository.save(n);
-                    log.info("공지 자동 만료: id={}, createdAt={}", n.getId(), n.getCreatedAt());
-                });
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime threshold = now.minusDays(30);
+        int count = noticeRepository.expireNoticesBefore(threshold, now);
+        log.info("공지 자동 만료: {}건", count);
     }
 }
