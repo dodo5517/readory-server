@@ -143,7 +143,7 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
-        if (userRepository.existsByUsername(newUsername)) {
+        if (!user.getUsername().equals(newUsername) && userRepository.existsByUsername(newUsername)) {
             throw new IllegalArgumentException("이미 사용 중인 이름입니다.");
         }
 
