@@ -3,6 +3,7 @@ package me.dodo.readingnotes.service;
 // jakarta.transaction.Transactional 보다 밑에가 spring framework 전용으로 연동 잘 됨.
 import me.dodo.readingnotes.dto.admin.AdminPageUserResponse;
 import me.dodo.readingnotes.exception.PasswordMismatchException;
+import me.dodo.readingnotes.repository.RefreshTokenRepository;
 import me.dodo.readingnotes.util.ApiKeyGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,14 +23,17 @@ public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
     private final PasswordEncoder passwordEncoder;
     private final S3Service s3Service;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Autowired
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       S3Service s3Service) {
+                       S3Service s3Service,
+                       RefreshTokenRepository refreshTokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.s3Service = s3Service;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     // 유저 회원가입
@@ -141,6 +145,7 @@ public class UserService {
         // 새로운 비밀번호 해싱 후 저장
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user); // DB에 저장
+        refreshTokenRepository.deleteAllByUserId(userId);
     }
 
     // 유저 비밀번호 수정(관리자)
@@ -156,6 +161,7 @@ public class UserService {
         // 새로운 비밀번호 해싱 후 저장
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user); // DB에 저장
+        refreshTokenRepository.deleteAllByUserId(userId);
     }
 
     // 유저 계정 초기화
@@ -169,6 +175,7 @@ public class UserService {
         // api_key 재발급
         user.setApiKey(ApiKeyGenerator.generate());
         userRepository.save(user);
+        refreshTokenRepository.deleteAllByUserId(userId);
 
         return newPassword;
     }
@@ -224,6 +231,9 @@ public class UserService {
 
         user.setUserStatus(status);
         userRepository.save(user);
+        if (status == User.UserStatus.BLOCKED) {
+            refreshTokenRepository.deleteAllByUserId(userId);
+        }
     }
 
     // 유저 권한(역할) 수정
