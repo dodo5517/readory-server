@@ -5,7 +5,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 
 @Configuration
 public class BookConfig {
@@ -25,25 +27,29 @@ public class BookConfig {
     @Value("${spring.security.oauth2.client.registration.naver.client-secret}")
     private String naverClientSecret;
 
-    // 스프링 컨테이너에 WebClient 빈을 등록함
-    // 나중에 @Qualifier("kakaoBookWebClient") 사용하여 이 빈을 주입할 수 있음.
+    private ClientHttpRequestFactory requestFactory() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(5000);
+        return factory;
+    }
 
-    // 카카오 책 검색 API WebClient
-    @Bean(name = "kakaoBookWebClient")
-    public WebClient kakaoBookWebClient() {
+    @Bean(name = "kakaoBookRestClient")
+    public RestClient kakaoBookRestClient() {
         if (kakaoApiKey == null || kakaoApiKey.isBlank()) {
             throw new IllegalStateException("Kakao Book REST API 키가 비어있습니다.");
         }
-        return WebClient.builder()
+        return RestClient.builder()
+                .requestFactory(requestFactory())
                 .baseUrl(kakaoBaseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "KakaoAK " + kakaoApiKey)
                 .build();
     }
 
-    // 네이버 책 검색 API WebClient
-    @Bean(name = "naverBookWebClient")
-    public WebClient naverBookWebClient() {
-        return WebClient.builder()
+    @Bean(name = "naverBookRestClient")
+    public RestClient naverBookRestClient() {
+        return RestClient.builder()
+                .requestFactory(requestFactory())
                 .baseUrl(naverBaseUrl)
                 .defaultHeader("X-Naver-Client-Id", naverClientId)
                 .defaultHeader("X-Naver-Client-Secret", naverClientSecret)

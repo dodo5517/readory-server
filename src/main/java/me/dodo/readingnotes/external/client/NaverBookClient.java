@@ -1,6 +1,5 @@
 package me.dodo.readingnotes.external.client;
 
-
 import me.dodo.readingnotes.dto.book.BookCandidate;
 import me.dodo.readingnotes.external.BookSearchClient;
 import me.dodo.readingnotes.external.adapter.NaverBookAdapter;
@@ -8,22 +7,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
 @Order(2)
 public class NaverBookClient implements BookSearchClient {
     private static final Logger log = LoggerFactory.getLogger(NaverBookClient.class);
-    private final WebClient webClient;
+    private final RestClient restClient;
     private final NaverBookAdapter adapter;
 
     public NaverBookClient(
-            @Qualifier("naverBookWebClient") WebClient webClient,
+            @Qualifier("naverBookRestClient") RestClient restClient,
             NaverBookAdapter adapter) {
-        this.webClient = webClient;
+        this.restClient = restClient;
         this.adapter = adapter;
     }
 
@@ -51,16 +52,16 @@ public class NaverBookClient implements BookSearchClient {
 
     // Naver API 호출
     private NaverBookAdapter.NaverResponse fetchFromApi(String query, int display) {
-        return webClient.get()
+        return restClient.get()
                 .uri(uri -> uri.queryParam("query", query)
                         .queryParam("display", display)
                         .queryParam("sort", "sim")  // 정확도순 정렬
                         .build())
                 .retrieve()
-                .onStatus(status -> status.isError(), r ->
-                        r.bodyToMono(String.class).map(body ->
-                                new RuntimeException("Naver API error: " + r.statusCode() + " - " + body)))
-                .bodyToMono(NaverBookAdapter.NaverResponse.class)
-                .block();
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                    String body = new String(res.getBody().readAllBytes(), StandardCharsets.UTF_8);
+                    throw new RuntimeException("Naver API error: " + res.getStatusCode() + " - " + body);
+                })
+                .body(NaverBookAdapter.NaverResponse.class);
     }
 }

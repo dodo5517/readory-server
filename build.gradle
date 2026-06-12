@@ -47,7 +47,7 @@ dependencies {
     implementation "software.amazon.awssdk:s3:$awsSdkVersion"
     implementation "software.amazon.awssdk:auth:$awsSdkVersion"
 
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
     implementation 'net.coobird:thumbnailator:0.4.20'
     implementation 'org.apache.commons:commons-text:1.11.0'
 }

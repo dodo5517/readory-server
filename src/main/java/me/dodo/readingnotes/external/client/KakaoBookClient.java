@@ -7,21 +7,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+
 @Component
 @Order(1)
 public class KakaoBookClient implements BookSearchClient {
     private static final Logger log = LoggerFactory.getLogger(KakaoBookClient.class);
-    private final WebClient webClient;
+    private final RestClient restClient;
     private final KakaoBookAdapter adapter;
 
     public KakaoBookClient(
-            @Qualifier("kakaoBookWebClient") WebClient webClient,
+            @Qualifier("kakaoBookRestClient") RestClient restClient,
             KakaoBookAdapter adapter) {
-        this.webClient = webClient;
+        this.restClient = restClient;
         this.adapter = adapter;
     }
 
@@ -48,16 +51,16 @@ public class KakaoBookClient implements BookSearchClient {
 
     // 카카오 API 호출
     private KakaoBookAdapter.KakaoResponse fetchFromApi(String query, int size) {
-        return webClient.get()
+        return restClient.get()
                 .uri(uri -> uri.queryParam("query", query)
                         .queryParam("size", size)
                         .queryParam("sort", "accuracy")
                         .build())
                 .retrieve()
-                .onStatus(status -> status.isError(), r ->
-                        r.bodyToMono(String.class).map(body ->
-                                new RuntimeException("Kakao API error: " + r.statusCode() + " - " + body)))
-                .bodyToMono(KakaoBookAdapter.KakaoResponse.class)
-                .block();
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                    String body = new String(res.getBody().readAllBytes(), StandardCharsets.UTF_8);
+                    throw new RuntimeException("Kakao API error: " + res.getStatusCode() + " - " + body);
+                })
+                .body(KakaoBookAdapter.KakaoResponse.class);
     }
 }
