@@ -153,8 +153,7 @@ public class ReadingRecordController {
                 ? Sort.by("recordedAt").ascending()
                 : Sort.by("recordedAt").descending();
         Pageable pageable = PageRequest.of(page, size, order);
-        Page<ReadingRecord> pageAndRecords = calendarService.findByMonth(userId, year, month, q, pageable);
-        return ApiResponse.success(PageResponse.from(pageAndRecords.map(ReadingRecordResponse::new)));
+        return ApiResponse.success(PageResponse.from(calendarService.findByMonth(userId, year, month, q, pageable)));
     }
 
     // 하루 기록 목록 조회
@@ -172,8 +171,7 @@ public class ReadingRecordController {
                 ? Sort.by("recordedAt").ascending()
                 : Sort.by("recordedAt").descending();
         Pageable pageable = PageRequest.of(page, size, order);
-        Page<ReadingRecord> pageAndRecords = calendarService.findByDay(userId, LocalDate.parse(date), q, pageable);
-        return ApiResponse.success(PageResponse.from(pageAndRecords.map(ReadingRecordResponse::new)));
+        return ApiResponse.success(PageResponse.from(calendarService.findByDay(userId, LocalDate.parse(date), q, pageable)));
     }
 
     // 기록 수정

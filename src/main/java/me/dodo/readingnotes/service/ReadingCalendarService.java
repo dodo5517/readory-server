@@ -4,11 +4,13 @@ import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.dto.calendar.CalendarResponse;
 import me.dodo.readingnotes.dto.calendar.CalendarSummary;
 import me.dodo.readingnotes.dto.calendar.DayStat;
+import me.dodo.readingnotes.dto.reading.ReadingRecordResponse;
 import me.dodo.readingnotes.repository.DayCountRow;
 import me.dodo.readingnotes.repository.ReadingRecordRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -65,16 +67,20 @@ public class ReadingCalendarService {
     }
 
     // 하루 기록 보기
-    public Page<ReadingRecord> findByDay(Long userId, LocalDate day, String q, Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<ReadingRecordResponse> findByDay(Long userId, LocalDate day, String q, Pageable pageable) {
         LocalDateTime start = day.atStartOfDay();
         LocalDateTime end   = day.plusDays(1).atStartOfDay();
-        return repo.findRecordsInRange(userId, start, end, q, pageable);
+        return repo.findRecordsInRange(userId, start, end, q, pageable)
+                   .map(ReadingRecordResponse::new);
     }
     // 월 전체 기록 보기
-    public Page<ReadingRecord> findByMonth(Long userId, int year, int month, String q, Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<ReadingRecordResponse> findByMonth(Long userId, int year, int month, String q, Pageable pageable) {
         YearMonth ym = YearMonth.of(year, month);
         LocalDateTime start = ym.atDay(1).atStartOfDay();
         LocalDateTime end   = ym.plusMonths(1).atDay(1).atStartOfDay();
-        return repo.findRecordsInRange(userId, start, end, q, pageable);
+        return repo.findRecordsInRange(userId, start, end, q, pageable)
+                   .map(ReadingRecordResponse::new);
     }
 }
