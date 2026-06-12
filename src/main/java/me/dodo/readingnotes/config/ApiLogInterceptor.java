@@ -53,11 +53,7 @@ public class ApiLogInterceptor implements HandlerInterceptor {
         }
 
         Object startAttr = request.getAttribute(ATTR_START_TIME);
-        if (!(startAttr instanceof Long)) {
-            startAttr = System.currentTimeMillis();
-        }
-
-        long start = (long) request.getAttribute(ATTR_START_TIME);
+        long start = (startAttr instanceof Long l) ? l : System.currentTimeMillis();
         int executionTimeMs = (int) (System.currentTimeMillis() - start);
 
         int statusCode = response.getStatus();
