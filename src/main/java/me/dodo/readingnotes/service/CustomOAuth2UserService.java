@@ -104,6 +104,12 @@ public class CustomOAuth2UserService implements
             throw new OAuth2AuthenticationException(new OAuth2Error("email_already_registered"), "이미 가입된 이메일입니다.");
         }
 
+        // 차단된 계정 차단
+        if (existingUser != null && existingUser.getUserStatus() == User.UserStatus.BLOCKED) {
+            userAuthLogService.logLoginFail(existingUser, email, registrationId, "차단된 계정입니다.", httpRequest);
+            throw new OAuth2AuthenticationException(new OAuth2Error("account_blocked"), "차단된 계정입니다.");
+        }
+
         // DB에 저장 (신규면 api_key 생성 후 저장)
         User user = existingUser != null
                 ? existingUser

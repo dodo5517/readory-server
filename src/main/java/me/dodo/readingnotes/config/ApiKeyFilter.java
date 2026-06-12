@@ -56,6 +56,12 @@ public class ApiKeyFilter extends OncePerRequestFilter {
             return;
         }
 
+        // 차단된 계정은 API Key로도 접근 불가
+        if (userOpt.get().getUserStatus() == User.UserStatus.BLOCKED) {
+            ApiErrorWriter.writeApiError(response, objectMapper, 403, "ACCOUNT_BLOCKED", "차단된 계정입니다.");
+            return;
+        }
+
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(userOpt.get(), null,
                         List.of(new SimpleGrantedAuthority(userOpt.get().getRole())));
