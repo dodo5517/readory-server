@@ -75,8 +75,6 @@ public class UserController {
         ImageValidator.validateMagicBytes(image);
         ImageValidator.validateDimensions(image);
 
-        userService.deleteProfileImage(userId);
-
         byte[] resizedImage = imageResizer.resizeImageKeepRatio(image);
 
         String timestamp = LocalDateTime.now()
@@ -84,7 +82,7 @@ public class UserController {
         String fileName = "user-" + userId + "_" + timestamp;
 
         String imageUrl = s3Service.uploadProfileImage(resizedImage, fileName, image.getContentType());
-        userService.updateProfileImage(userId, imageUrl);
+        userService.replaceProfileImage(userId, imageUrl);
 
         return ApiResponse.success(null, imageUrl);
     }
