@@ -18,7 +18,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
 @Configuration
 @EnableWebSecurity
@@ -87,6 +90,16 @@ public class SecurityConfig {
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2SuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            String code = "oauth_failed";
+                            if (exception instanceof OAuth2AuthenticationException oae
+                                    && oae.getError() != null
+                                    && oae.getError().getErrorCode() != null) {
+                                code = oae.getError().getErrorCode();
+                            }
+                            response.sendRedirect(frontendUrl + "/oauth/callback#error="
+                                    + URLEncoder.encode(code, StandardCharsets.UTF_8));
+                        })
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -94,26 +95,25 @@ public class CustomOAuth2UserService implements
         customAttributes.put(userNameAttribute, providerId);
         customAttributes.put("original", attributes);
 
-        // 일반 회원가입한 이메일로 로그인 시 소셜 로그인 거부
-        userRepository.findByEmail(email).ifPresent(user -> {
-            if (user.getProvider() == null || !user.getProvider().equals(registrationId)) {
-                throw new IllegalArgumentException("이미 가입된 이메일입니다.");
-            }
-        });
+        // DB에서 한 번만 조회
+        User existingUser = userRepository.findByEmail(email).orElse(null);
 
-        // api_key 생성
-        String api_key = ApiKeyGenerator.generate();
-        if (api_key != null){
-//            log.info("api_key:" + api_key.substring(0,8));
-        } else{
-            log.warn("api_key가 null임.");
+        // 일반 회원가입한 이메일로 로그인 시 소셜 로그인 거부
+        if (existingUser != null && (existingUser.getProvider() == null || !existingUser.getProvider().equals(registrationId))) {
+            userAuthLogService.logLoginFail(existingUser, email, registrationId, "이미 가입된 이메일입니다.", httpRequest);
+            throw new OAuth2AuthenticationException(new OAuth2Error("email_already_registered"), "이미 가입된 이메일입니다.");
         }
 
-        // DB에 저장
-        User user = userRepository.findByEmail(email)
-                .orElseGet(() -> userRepository.save(
-                        User.fromSocial(email, name, registrationId, providerId, api_key)
-                ));
+        // 차단된 계정 차단
+        if (existingUser != null && existingUser.getUserStatus() == User.UserStatus.BLOCKED) {
+            userAuthLogService.logLoginFail(existingUser, email, registrationId, "차단된 계정입니다.", httpRequest);
+            throw new OAuth2AuthenticationException(new OAuth2Error("account_blocked"), "차단된 계정입니다.");
+        }
+
+        // DB에 저장 (신규면 api_key 생성 후 저장)
+        User user = existingUser != null
+                ? existingUser
+                : userRepository.save(User.fromSocial(email, name, registrationId, providerId, ApiKeyGenerator.generate()));
         log.debug("user: {}", user);
 
         // 소셜 로그인 로그 저장
