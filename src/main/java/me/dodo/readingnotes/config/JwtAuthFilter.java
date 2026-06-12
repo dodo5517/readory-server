@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.config;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +18,7 @@ import java.util.List;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
+    public static final String ATTR_TOKEN_EXPIRED = "TOKEN_EXPIRED";
     private static final String ATTR_USER_ID = "USER_ID";
     private static final String ATTR_USER_ROLE = "USER_ROLE";
 
@@ -39,27 +41,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
             String accessToken = jwtTokenProvider.extractToken(request);
+            jwtTokenProvider.assertValid(accessToken);
+            Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
+            String role = jwtTokenProvider.getRoleFromToken(accessToken);
 
-            if (accessToken != null && jwtTokenProvider.validateToken(accessToken)) {
-                Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
-                String role = jwtTokenProvider.getRoleFromToken(accessToken);
+            //  로그 / 인터셉터 / 컨트롤러 공통 사용
+            request.setAttribute(ATTR_USER_ID, userId);
+            request.setAttribute(ATTR_USER_ROLE, role);
+            // SecurityContext에 인증 정보 설정
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userId,                                          // principal
+                            null,                                            // credentials
+                            List.of(new SimpleGrantedAuthority("ROLE_" + role))  // authorities
+                    );
 
-                //  로그 / 인터셉터 / 컨트롤러 공통 사용
-                request.setAttribute(ATTR_USER_ID, userId);
-                request.setAttribute(ATTR_USER_ROLE, role);
-                // SecurityContext에 인증 정보 설정
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userId,                                          // principal
-                                null,                                            // credentials
-                                List.of(new SimpleGrantedAuthority("ROLE_" + role))  // authorities
-                        );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
-
+        } catch (ExpiredJwtException e) {
+            request.setAttribute(ATTR_TOKEN_EXPIRED, true);
         } catch (Exception e) {
-            // 인증 실패여도 throw 하면 안 됨, 로그는 실패 요청도 남겨야 함
+            // 인증 실패여도 throw 하면 안 됨
         }
 
         filterChain.doFilter(request, response);

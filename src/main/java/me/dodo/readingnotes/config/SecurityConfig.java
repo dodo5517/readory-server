@@ -73,10 +73,15 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .formLogin(form -> form.disable())      // 기본 form 로그인 비활성화
                 .httpBasic(basic -> basic.disable())    // 기본 httpBasic 비활성화
-                // 인증 실패 시 302 대신 401 반환
+                // 인증 실패 시 302 대신 401 반환 (토큰 만료는 별도 코드로 구분)
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) ->
-                                ApiErrorWriter.writeApiError(response, objectMapper, 401, "UNAUTHORIZED", "로그인이 필요합니다."))
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            if (Boolean.TRUE.equals(request.getAttribute(JwtAuthFilter.ATTR_TOKEN_EXPIRED))) {
+                                ApiErrorWriter.writeApiError(response, objectMapper, 401, "ACCESS_TOKEN_EXPIRED", "액세스 토큰이 만료되었습니다.");
+                            } else {
+                                ApiErrorWriter.writeApiError(response, objectMapper, 401, "UNAUTHORIZED", "로그인이 필요합니다.");
+                            }
+                        })
                 )
                 // 이쪽 url들은 권한 없이 들어갈 수 있음
                 .authorizeHttpRequests(auth -> auth
