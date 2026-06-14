@@ -229,17 +229,8 @@ public class UserService {
         userRepository.delete(user);
 
         // 삭제 완료 메시지
-        log.info("Deleted:" + user.getEmail());
+        log.info("Deleted:{}", user.getEmail());
         return true;
-    }
-
-    // 관리자인지 권한 확인
-    public void assertAdmin(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 유저가 없습니다."));
-        if (!"ADMIN".equals(user.getRole())) {
-            throw new IllegalArgumentException("관리자 권한이 없습니다.");
-        }
     }
 
     // 유저 상태 수정
