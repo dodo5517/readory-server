@@ -25,6 +25,17 @@ public class ImageResizer {
         return outputStream.toByteArray();
     }
 
+    public byte[] resizeImageKeepRatio(MultipartFile image, String format) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        String outputFormat = "jpeg".equals(format) ? "jpg" : format;
+        Thumbnails.of(image.getInputStream())
+                .size(MAX_WIDTH, MAX_HEIGHT)
+                .keepAspectRatio(true)
+                .outputFormat(outputFormat)
+                .toOutputStream(outputStream);
+        return outputStream.toByteArray();
+    }
+
     private String getFormat(String filename) {
         if (filename == null) return "jpg";
         String extension = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();

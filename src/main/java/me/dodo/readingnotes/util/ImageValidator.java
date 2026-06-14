@@ -10,7 +10,7 @@ import java.util.Iterator;
 
 public class ImageValidator {
 
-    public static void validateMagicBytes(MultipartFile image) {
+    public static String validateMagicBytes(MultipartFile image) {
         byte[] header;
         try (var is = image.getInputStream()) {
             header = is.readNBytes(12);
@@ -18,9 +18,9 @@ public class ImageValidator {
             throw new IllegalArgumentException("이미지 파일을 읽을 수 없습니다.");
         }
 
-        if (isJpeg(header) || isPng(header) || isWebP(header)) {
-            return;
-        }
+        if (isJpeg(header)) return "jpeg";
+        if (isPng(header)) return "png";
+        if (isWebP(header)) return "webp";
         throw new IllegalArgumentException("지원하지 않거나 위조된 이미지 형식입니다.");
     }
 
