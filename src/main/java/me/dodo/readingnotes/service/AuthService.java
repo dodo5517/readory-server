@@ -171,7 +171,8 @@ public class AuthService {
         String resultRefreshToken;
         if (remainingDays < 23) {
             String newRefreshToken = jwtTokenProvider.createRefreshToken();
-            LocalDateTime newExpiry = LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusDays(30);
+            LocalDateTime newExpiry = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+                    .plus(jwtTokenProvider.getRefreshTokenValidity());
             refreshTokenRepository.upsert(user.getId(), deviceInfo,
                     TokenHasher.sha256Hex(newRefreshToken), newExpiry);
             resultRefreshToken = newRefreshToken;

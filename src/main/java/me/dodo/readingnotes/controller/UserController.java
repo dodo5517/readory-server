@@ -68,20 +68,25 @@ public class UserController {
         if (image.getSize() > 5 * 1024 * 1024) {
             throw new IllegalArgumentException("이미지 크기는 5MB를 초과할 수 없습니다.");
         }
-        String contentType = image.getContentType();
-        if (!"image/jpeg".equals(contentType) && !"image/png".equals(contentType) && !"image/webp".equals(contentType)) {
+        String clientContentType = image.getContentType();
+        if (!"image/jpeg".equals(clientContentType) && !"image/png".equals(clientContentType) && !"image/webp".equals(clientContentType)) {
             throw new IllegalArgumentException("지원하지 않는 이미지 형식입니다.");
         }
-        ImageValidator.validateMagicBytes(image);
+        String format = ImageValidator.validateMagicBytes(image);
         ImageValidator.validateDimensions(image);
 
-        byte[] resizedImage = imageResizer.resizeImageKeepRatio(image);
+        byte[] resizedImage = imageResizer.resizeImageKeepRatio(image, format);
 
         String timestamp = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS"));
         String fileName = "user-" + userId + "_" + timestamp;
 
-        String imageUrl = s3Service.uploadProfileImage(resizedImage, fileName, image.getContentType());
+        String contentType = switch (format) {
+            case "png" -> "image/png";
+            case "webp" -> "image/webp";
+            default -> "image/jpeg";
+        };
+        String imageUrl = s3Service.uploadProfileImage(resizedImage, fileName, contentType);
         userService.replaceProfileImage(userId, imageUrl);
 
         return ApiResponse.success(null, imageUrl);

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.time.Duration;
 import java.util.Date;
 
 @Component // static 메서드만 있으면 필요 없긴 함.
@@ -88,7 +89,7 @@ public class JwtTokenProvider {
         } catch (ExpiredJwtException e) {
             log.warn("만료된 토큰입니다: {}",e.getMessage());
         } catch (JwtException e) {
-            log.error("유효하지 않은 토큰입니다: {}",e.getMessage());
+            log.warn("유효하지 않은 토큰입니다: {}",e.getMessage());
         }
         return false;
     }
@@ -122,6 +123,10 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token)
                 .getBody()
                 .getExpiration();
+    }
+
+    public Duration getRefreshTokenValidity() {
+        return Duration.ofMillis(refreshTokenValidity);
     }
 
     // 토큰 만료 남은 시간 확인

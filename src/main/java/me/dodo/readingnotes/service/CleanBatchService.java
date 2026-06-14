@@ -1,6 +1,5 @@
 package me.dodo.readingnotes.service;
 
-import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.dto.reading.SentenceCleanProjection;
 import me.dodo.readingnotes.repository.ReadingRecordRepository;
 import me.dodo.readingnotes.util.EbookSourceCleaner;
@@ -35,13 +34,7 @@ public class CleanBatchService {
                     : proj.getSentence();
             String cleaned = EbookSourceCleaner.clean(base);
             if (!cleaned.equals(proj.getSentence())) {
-                ReadingRecord record = readingRecordRepository.findById(proj.getId()).orElse(null);
-                if (record == null) continue;
-                if (record.getSentenceOriginal() == null) {
-                    record.setSentenceOriginal(proj.getSentence());
-                }
-                record.setSentence(cleaned);
-                readingRecordRepository.save(record);
+                readingRecordRepository.updateCleanedSentence(proj.getId(), cleaned, proj.getSentence());
                 updated++;
             }
         }

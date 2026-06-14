@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.util.ApiErrorWriter;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,8 +42,8 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain chain) throws ServletException, IOException {
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain chain) throws ServletException, IOException {
         String apiKey = request.getHeader(HEADER_API_KEY);
 
         if (apiKey == null || apiKey.isBlank()) {
@@ -64,7 +65,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(userOpt.get(), null,
-                        List.of(new SimpleGrantedAuthority(userOpt.get().getRole())));
+                        List.of(new SimpleGrantedAuthority("ROLE_" + userOpt.get().getRole())));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
