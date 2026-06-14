@@ -177,8 +177,14 @@ public class ReadingRecordService {
         }
 
         // 기간 계산
-        LocalDateTime minAt = readingRecordRepository.findMinRecordedAtByUserAndBook(userId, bookId);
-        LocalDateTime maxAt = readingRecordRepository.findMaxRecordedAtByUserAndBook(userId, bookId);
+        List<Object[]> minMaxResult = readingRecordRepository.findMinMaxRecordedAtByUserAndBook(userId, bookId);
+        LocalDateTime minAt = null;
+        LocalDateTime maxAt = null;
+        if (!minMaxResult.isEmpty()) {
+            Object[] row = minMaxResult.get(0);
+            minAt = (LocalDateTime) row[0];
+            maxAt = (LocalDateTime) row[1];
+        }
 
         String periodStart = (minAt == null) ? null : minAt.toString();
         String periodEnd   = (maxAt == null) ? null : maxAt.toString();
@@ -267,7 +273,7 @@ public class ReadingRecordService {
                 bookMatchingAsyncService.matchAndSave(record);
             }
         }
-        log.debug("saved record: {}", request.toString());
+        log.debug("saved record: {}", request);
         // 수정한 기록 저장
         ReadingRecord saved = readingRecordRepository.save(record);
 

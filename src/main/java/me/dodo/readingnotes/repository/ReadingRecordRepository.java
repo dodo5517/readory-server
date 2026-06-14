@@ -131,21 +131,15 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     );
 
 
-    // 기간 계산(해당 유저의 해당 책 기록 중 가장 과거/가장 최근)
+    // 기간 계산(해당 유저의 해당 책 기록 중 가장 과거/가장 최근) — 쿼리 1회
     @Query("""
-        select min(r.recordedAt)
+        select min(r.recordedAt), max(r.recordedAt)
           from ReadingRecord r
          where r.user.id = :userId
            and r.book.id = :bookId
-    """)
-    LocalDateTime findMinRecordedAtByUserAndBook(Long userId, Long bookId);
-    @Query("""
-        select max(r.recordedAt)
-          from ReadingRecord r
-         where r.user.id = :userId
-           and r.book.id = :bookId
-    """)
-    LocalDateTime findMaxRecordedAtByUserAndBook(Long userId, Long bookId);
+        """)
+    List<Object[]> findMinMaxRecordedAtByUserAndBook(@Param("userId") Long userId,
+                                                    @Param("bookId") Long bookId);
 
     // 해당 유저의 기록 중 최신 N개만 가져옴,  count 쿼리 없음.
     // 페이지네이션 필요 없으니 굳이 Page 안 쓰고 List로 반환
@@ -305,6 +299,18 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
     @Query("SELECT r.id AS id, r.sentence AS sentence, r.sentenceOriginal AS sentenceOriginal " +
             "FROM ReadingRecord r WHERE r.sentence IS NOT NULL AND r.sentence <> ''")
     Page<SentenceCleanProjection> findAllForClean(Pageable pageable);
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+        UPDATE ReadingRecord r
+           SET r.sentence = :cleaned,
+               r.sentenceOriginal = COALESCE(r.sentenceOriginal, :prevSentence),
+               r.updatedAt = CURRENT_TIMESTAMP
+         WHERE r.id = :id
+        """)
+    int updateCleanedSentence(@Param("id") Long id,
+                              @Param("cleaned") String cleaned,
+                              @Param("prevSentence") String prevSentence);
 
 
     // 기록 상세 조회
