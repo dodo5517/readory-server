@@ -1,6 +1,5 @@
 package me.dodo.readingnotes.service;
 
-import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.dto.calendar.CalendarResponse;
 import me.dodo.readingnotes.dto.calendar.CalendarSummary;
 import me.dodo.readingnotes.dto.calendar.DayStat;
@@ -55,15 +54,18 @@ public class ReadingCalendarService {
         List<DayCoverRow> coverRows = repo.coversByDayInRange(userId, start, end);
 
         Map<String, String> firstCoverByDay = new HashMap<>();
+        Map<String, Integer> bookCountByDay = new HashMap<>();
         for (DayCoverRow c : coverRows) {
             firstCoverByDay.putIfAbsent(c.getDay(), c.getCoverUrl());
+            bookCountByDay.merge(c.getDay(), 1, Integer::sum);
         }
 
         List<DayStat> days = new ArrayList<>();
         long totalRecords = 0;
         for (DayCountRow r : rows) {
             LocalDate d = LocalDate.parse(r.getDay()); // "YYYY-MM-DD"
-            days.add(new DayStat(d, r.getCnt(), firstCoverByDay.get(r.getDay())));
+            int bookCount = bookCountByDay.getOrDefault(r.getDay(), 0);
+            days.add(new DayStat(d, r.getCnt(), firstCoverByDay.get(r.getDay()), bookCount));
             totalRecords += r.getCnt();
         }
 
