@@ -6,6 +6,7 @@ import me.dodo.readingnotes.dto.calendar.CalendarSummary;
 import me.dodo.readingnotes.dto.calendar.DayStat;
 import me.dodo.readingnotes.dto.reading.ReadingRecordResponse;
 import me.dodo.readingnotes.repository.DayCountRow;
+import me.dodo.readingnotes.repository.DayCoverRow;
 import me.dodo.readingnotes.repository.ReadingRecordRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +17,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ReadingCalendarService {
@@ -49,12 +52,18 @@ public class ReadingCalendarService {
         // 그 달의 마지막 날
         LocalDateTime end = endDate.plusDays(1).atStartOfDay();
         List<DayCountRow> rows = repo.countByDayInRange(userId, start, end);
+        List<DayCoverRow> coverRows = repo.coversByDayInRange(userId, start, end);
+
+        Map<String, String> firstCoverByDay = new HashMap<>();
+        for (DayCoverRow c : coverRows) {
+            firstCoverByDay.putIfAbsent(c.getDay(), c.getCoverUrl());
+        }
 
         List<DayStat> days = new ArrayList<>();
         long totalRecords = 0;
         for (DayCountRow r : rows) {
             LocalDate d = LocalDate.parse(r.getDay()); // "YYYY-MM-DD"
-            days.add(new DayStat(d, r.getCnt()));
+            days.add(new DayStat(d, r.getCnt(), firstCoverByDay.get(r.getDay())));
             totalRecords += r.getCnt();
         }
 
