@@ -249,6 +249,22 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                                         @Param("start") LocalDateTime start,
                                         @Param("end") LocalDateTime end);
 
+    @Query("""
+        select
+           function('date', r.recordedAt) as day,
+           r.book.coverUrl as coverUrl,
+           max(r.recordedAt) as lastAt
+        from ReadingRecord r
+        where r.user.id = :userId
+          and r.recordedAt >= :start and r.recordedAt < :end
+          and r.book.coverUrl is not null
+        group by function('date', r.recordedAt), r.book.id, r.book.coverUrl
+        order by function('date', r.recordedAt) asc, max(r.recordedAt) desc
+    """)
+    List<DayCoverRow> coversByDayInRange(@Param("userId") Long userId,
+                                         @Param("start") LocalDateTime start,
+                                         @Param("end") LocalDateTime end);
+
     // 하루 기록 보기/월 전체 기록 보기
     @Query("""
       select rr
