@@ -222,45 +222,34 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
         """)
     Page<BookWithLastRecordResponse> findConfirmedBooksByTitle(@Param("userId") Long userId, @Param("q") String q, Pageable pageable);
 
-    // Day 목록
-    // sqlite
-//    @Query("""
-//        select
-//           function('strftime', '%Y-%m-%d', r.createdAt) as day,
-//           count(r) as cnt
-//        from ReadingRecord r
-//        where r.user.id = :userId
-//          and r.createdAt >= :start and r.createdAt < :end
-//        group by function('strftime', '%Y-%m-%d', r.createdAt)
-//        order by function('strftime', '%Y-%m-%d', r.createdAt) asc
-//        """)
-    // postgreSQL
-    @Query("""
-        select
-           function('date', r.recordedAt) as day,
-           count(r) as cnt
-        from ReadingRecord r
-        where r.user.id = :userId
-          and r.recordedAt >= :start and r.recordedAt < :end
-        group by function('date', r.recordedAt)
-        order by function('date', r.recordedAt) asc
-    """)
+    // Day 목록 — recorded_at 이 timestamptz/UTC 이므로 KST 기준으로 날짜를 잘라야 캘린더 날짜가 일치함
+    @Query(value = """
+        SELECT TO_CHAR(recorded_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') AS day,
+               COUNT(*) AS cnt
+          FROM reading_records
+         WHERE user_id = :userId
+           AND recorded_at >= :start
+           AND recorded_at < :end
+         GROUP BY TO_CHAR(recorded_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD')
+         ORDER BY TO_CHAR(recorded_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') ASC
+        """, nativeQuery = true)
     List<DayCountRow> countByDayInRange(@Param("userId") Long userId,
                                         @Param("start") LocalDateTime start,
                                         @Param("end") LocalDateTime end);
 
-    @Query("""
-        select
-           function('date', r.recordedAt) as day,
-           r.book.coverUrl as coverUrl,
-           max(r.recordedAt) as lastAt
-        from ReadingRecord r
-        where r.user.id = :userId
-          and r.recordedAt >= :start and r.recordedAt < :end
-          and r.book.coverUrl is not null
-        group by function('date', r.recordedAt), r.book.id, r.book.coverUrl
-        order by function('date', r.recordedAt) asc, max(r.recordedAt) desc
-    """)
+    @Query(value = """
+        SELECT TO_CHAR(r.recorded_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') AS day,
+               b.cover_url,
+               MAX(r.recorded_at) AS last_at
+          FROM reading_records r
+          JOIN books b ON r.book_id = b.id
+         WHERE r.user_id = :userId
+           AND r.recorded_at >= :start
+           AND r.recorded_at < :end
+           AND b.cover_url IS NOT NULL
+         GROUP BY TO_CHAR(r.recorded_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD'), r.book_id, b.cover_url
+         ORDER BY TO_CHAR(r.recorded_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') ASC, MAX(r.recorded_at) DESC
+        """, nativeQuery = true)
     List<DayCoverRow> coversByDayInRange(@Param("userId") Long userId,
                                          @Param("start") LocalDateTime start,
                                          @Param("end") LocalDateTime end);
