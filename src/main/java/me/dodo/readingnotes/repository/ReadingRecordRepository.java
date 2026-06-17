@@ -239,8 +239,8 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
 
     @Query(value = """
         SELECT TO_CHAR(r.recorded_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') AS day,
-               b.cover_url,
-               MAX(r.recorded_at) AS last_at
+               b.cover_url AS coverUrl,
+               MAX(r.recorded_at) AS lastAt
           FROM reading_records r
           JOIN books b ON r.book_id = b.id
          WHERE r.user_id = :userId
