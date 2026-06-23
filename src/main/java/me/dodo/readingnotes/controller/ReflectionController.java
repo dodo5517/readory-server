@@ -129,15 +129,26 @@ public class ReflectionController {
         return ApiResponse.success("삭제했습니다.");
     }
 
+    /** 현재 사용자가 독후감 기능을 쓸 수 있는지 여부. */
+    @GetMapping("/access")
+    public ApiResponse<Map<String, Boolean>> access(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("USER_ID");
+        if (userId == null) throw new AuthException("인증이 필요합니다.");
+        return ApiResponse.success(Map.of("canUse", isAllowed(userId)));
+    }
+
+    /** 허용 사용자 판단. allowed-user-id이면 모두 허용. */
+    private boolean isAllowed(Long userId) {
+        if (allowedUserIdRaw == null || allowedUserIdRaw.isBlank()) return true;
+        return Long.valueOf(allowedUserIdRaw.trim()).equals(userId);
+    }
+
     private Long resolveUserId(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("USER_ID");
         if (userId == null) throw new AuthException("인증이 필요합니다.");
-        // 독후감 기능은 지정된 사용자만 사용 가능(설정 시). 프론트가 아닌 서버에서 차단.
-        if (allowedUserIdRaw != null && !allowedUserIdRaw.isBlank()) {
-            Long allowed = Long.valueOf(allowedUserIdRaw.trim());
-            if (!allowed.equals(userId)) {
-                throw new AuthException("이 기능을 사용할 권한이 없습니다.");
-            }
+        // 독후감 기능은 지정된 사용자만 사용 가능
+        if (!isAllowed(userId)) {
+            throw new AuthException("이 기능을 사용할 권한이 없습니다.");
         }
         return userId;
     }
