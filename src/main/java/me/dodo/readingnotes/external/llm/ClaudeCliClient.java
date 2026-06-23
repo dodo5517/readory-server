@@ -1,5 +1,7 @@
 package me.dodo.readingnotes.external.llm;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +36,7 @@ public class ClaudeCliClient implements LlmClient {
     private final String modelCheap;
     private final String modelQuality;
     private final long timeoutMs;
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public ClaudeCliClient(
             @Value("${external.llm.cli.path:claude}") String cliPath,
@@ -58,7 +61,7 @@ public class ClaudeCliClient implements LlmClient {
         command.add("--system-prompt");
         command.add(system);                     // 기본 프롬프트를 우리 system으로 교체
         command.add("--output-format");
-        command.add("text");                     // 평문 출력
+        command.add("json");                     // 구조화 출력 → result 필드에서 순수 응답 추출
         command.add("--max-turns");
         command.add("1");                        // 한 번에 끝(에이전트 루프 방지)
         // user 메시지는 stdin으로 전달(따옴표/개행 이스케이프 문제 회피)
@@ -98,7 +101,8 @@ public class ClaudeCliClient implements LlmClient {
                 throw new RuntimeException("claude CLI 호출 실패(exit=" + exit + ")");
             }
 
-            return out.toString().strip();
+            String stdout = out.toString().strip();
+            return extractResult(stdout);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -111,6 +115,34 @@ public class ClaudeCliClient implements LlmClient {
             if (process != null && process.isAlive()) {
                 process.destroyForcibly();
             }
+        }
+    }
+
+    /** --output-format json 출력에서 result 필드(실제 모델 응답)만 추출 */
+    private String extractResult(String stdout) {
+        if (stdout == null || stdout.isBlank()) {
+            log.warn("claude CLI 출력이 비었습니다.");
+            return "";
+        }
+        try {
+            JsonNode node = MAPPER.readTree(stdout);
+            // 정상: { "type":"result", "result":"...", "is_error":false, ... }
+            if (node.has("result")) {
+                if (node.path("is_error").asBoolean(false)) {
+                    log.error("claude CLI is_error=true. 출력: {}", stdout);
+                    throw new RuntimeException("claude CLI 오류 응답");
+                }
+                return node.path("result").asText("").strip();
+            }
+            // result 필드가 없으면 원문 그대로(혹시 모를 형식 변화 대비)
+            log.warn("claude CLI 출력에 result 필드 없음. 원문 사용: {}", stdout);
+            return stdout;
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            // JSON이 아니면(예: 형식 변화) 원문 반환
+            log.warn("claude CLI 출력 JSON 파싱 실패, 원문 사용: {}", e.getMessage());
+            return stdout;
         }
     }
 

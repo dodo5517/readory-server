@@ -79,6 +79,15 @@ public class ClaudeLlmClient implements LlmClient {
                 sb.append(block.path("text").asText());
             }
         }
-        return sb.toString();
+        String text = sb.toString();
+        // 잘림(max_tokens) 또는 빈 응답 진단용 로그
+        String stopReason = response.path("stop_reason").asText("");
+        if ("max_tokens".equals(stopReason)) {
+            log.warn("Claude 응답이 max_tokens로 잘렸습니다. 출력 길이={}자", text.length());
+        }
+        if (text.isBlank()) {
+            log.warn("Claude 텍스트 추출 결과가 비었습니다. stop_reason={}, 원문={}", stopReason, response);
+        }
+        return text;
     }
 }
