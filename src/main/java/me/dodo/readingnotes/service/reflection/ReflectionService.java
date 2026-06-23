@@ -147,10 +147,46 @@ public class ReflectionService {
             }
         }
 
+        // 맺음말(아우르는 글) — 항상 마지막에 한 섹션 추가
+        String closingRaw = llmClient.complete(
+                ReflectionPrompts.COMPOSE_CLOSING_SYSTEM,
+                buildClosingUserMsg(book.getTitle(), tone, clusters, sections, records),
+                2000, CHEAP);
+        String closingBody = extractSectionBody(closingRaw);
+        Map<String, String> closingPayload = new LinkedHashMap<>();
+        closingPayload.put("heading", ""); // 맺음말은 제목 없이(프론트에서 구분 렌더 가능)
+        closingPayload.put("body", closingBody);
+        closingPayload.put("closing", "true"); // 프론트가 맺음말로 구분할 수 있게 표시
+        if (!sendEvent(emitter, "section", closingPayload)) {
+            log.info("클라이언트 연결 끊김 — 맺음말 전송 실패");
+            return;
+        }
+
         Map<String, Object> donePayload = new LinkedHashMap<>();
         donePayload.put("reflectionId", null);
         sendEvent(emitter, "done", donePayload);
         emitter.complete();
+    }
+
+    /** 맺음말 재료: 선택된 섹션들의 감정 결 제목+길잡이를 모아 전체 흐름을 보여준다 */
+    private String buildClosingUserMsg(String title, String tone,
+                                       List<ClusterDto> clusters, List<SectionOutlineDto> sections,
+                                       List<ReadingRecord> records) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("책 제목: ").append(title).append("\n");
+        sb.append("전체 톤: ").append(tone).append("\n\n");
+        sb.append("이 독후감에 담긴 감정의 결들입니다. 이것들을 아우르는 짧은 맺음말을 써 주세요.\n\n");
+        for (SectionOutlineDto section : sections) {
+            sb.append("- ").append(section.heading());
+            // 섹션이 다룬 묶음들의 길잡이를 덧붙여 맥락 제공
+            for (int ci : section.clusterIndices()) {
+                if (ci >= 0 && ci < clusters.size()) {
+                    sb.append("\n  · ").append(clusters.get(ci).summary());
+                }
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 
     // ── 메시지 빌더 ──────────────────────────────────────────────────
