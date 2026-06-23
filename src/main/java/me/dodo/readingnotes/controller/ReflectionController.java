@@ -2,15 +2,20 @@ package me.dodo.readingnotes.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import me.dodo.readingnotes.dto.common.ApiResponse;
+import org.springframework.beans.factory.annotation.Value;
 import me.dodo.readingnotes.dto.reflection.ClusterResult;
 import me.dodo.readingnotes.dto.reflection.ComposeRequest;
 import me.dodo.readingnotes.dto.reflection.ElicitRequest;
 import me.dodo.readingnotes.dto.reflection.ElicitResponse;
 import me.dodo.readingnotes.dto.reflection.ElicitSaveRequest;
+import me.dodo.readingnotes.dto.reflection.ReflectionResponse;
+import me.dodo.readingnotes.dto.reflection.ReflectionSaveRequest;
 import me.dodo.readingnotes.exception.AuthException;
 import me.dodo.readingnotes.service.reflection.EliciterService;
 import me.dodo.readingnotes.service.reflection.ReflectionService;
+import me.dodo.readingnotes.service.reflection.ReflectionStorageService;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,21 +24,30 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/reflection")
 public class ReflectionController {
 
     private final ReflectionService reflectionService;
     private final EliciterService eliciterService;
+    private final ReflectionStorageService storageService;
+
+    /** 이 기능을 쓸 수 있는 사용자 ID. 비어 있으면(미설정) 누구나 허용. */
+    @Value("${reflection.allowed-user-id:}")
+    private String allowedUserIdRaw;
 
     public ReflectionController(ReflectionService reflectionService,
-                                EliciterService eliciterService) {
+                                EliciterService eliciterService,
+                                ReflectionStorageService storageService) {
         this.reflectionService = reflectionService;
         this.eliciterService = eliciterService;
+        this.storageService = storageService;
     }
 
     /**
-     * 1단계: 묶기 + 개요. 동기 응답.
+     * 1단계: 묶기 + 개요. 동기 응답(빠름).
      * 프론트는 이 결과를 보여주고 멈춘 뒤, 사용자가 "독후감 만들기"를 누를 때 /compose로 그대로 돌려준다.
      */
     @PostMapping("/cluster")
@@ -79,9 +93,52 @@ public class ReflectionController {
         return ApiResponse.success(saved + "개의 감상을 기록에 더했습니다.", saved);
     }
 
+    // ── 완성 독후감 저장/조회/수정/삭제 ──────────────────────────────
+
+    /** 저장 또는 수정(upsert). 마크다운 한 덩어리. */
+    @PostMapping("/save")
+    public ApiResponse<ReflectionResponse> save(@RequestBody ReflectionSaveRequest body,
+                                                HttpServletRequest request) {
+        Long userId = resolveUserId(request);
+        return ApiResponse.success(storageService.save(userId, body));
+    }
+
+    /** 저장된 독후감 조회. 없으면 success(null). */
+    @GetMapping("/saved")
+    public ApiResponse<ReflectionResponse> getSaved(@RequestParam Long bookId,
+                                                    HttpServletRequest request) {
+        Long userId = resolveUserId(request);
+        return ApiResponse.success(storageService.get(userId, bookId).orElse(null));
+    }
+
+    /** 독후감 존재 여부(진입 분기용). */
+    @GetMapping("/exists")
+    public ApiResponse<Map<String, Boolean>> exists(@RequestParam Long bookId,
+                                                    HttpServletRequest request) {
+        Long userId = resolveUserId(request);
+        boolean exists = storageService.exists(userId, bookId);
+        return ApiResponse.success(Map.of("exists", exists));
+    }
+
+    /** 독후감 삭제(다시 생성하고 싶을 때). */
+    @DeleteMapping("/saved")
+    public ApiResponse<Void> deleteSaved(@RequestParam Long bookId,
+                                         HttpServletRequest request) {
+        Long userId = resolveUserId(request);
+        storageService.delete(userId, bookId);
+        return ApiResponse.success("삭제했습니다.");
+    }
+
     private Long resolveUserId(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("USER_ID");
         if (userId == null) throw new AuthException("인증이 필요합니다.");
+        // 독후감 기능은 지정된 사용자만 사용 가능(설정 시). 프론트가 아닌 서버에서 차단.
+        if (allowedUserIdRaw != null && !allowedUserIdRaw.isBlank()) {
+            Long allowed = Long.valueOf(allowedUserIdRaw.trim());
+            if (!allowed.equals(userId)) {
+                throw new AuthException("이 기능을 사용할 권한이 없습니다.");
+            }
+        }
         return userId;
     }
 }
