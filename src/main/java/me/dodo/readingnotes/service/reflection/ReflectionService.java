@@ -52,74 +52,89 @@ public class ReflectionService {
         llmExecutor.shutdownNow();
     }
 
-    public void composeAsync(Long userId, Long bookId, SseEmitter emitter) {
-        llmExecutor.submit(() -> {
-            try {
-                compose(userId, bookId, emitter);
-            } catch (Exception e) {
-                log.error("독후감 파이프라인 오류 userId={} bookId={}", userId, bookId, e);
-                sendError(emitter, e.getMessage() != null ? e.getMessage() : "독후감 생성 중 오류가 발생했습니다.");
-                try { emitter.complete(); } catch (Exception ignored) {}
-            }
-        });
-    }
-
-    private void compose(Long userId, Long bookId, SseEmitter emitter) throws IOException {
+    // ── 1단계: 묶기 + 개요만 (동기, SSE 아님) ────────────────────────
+    public me.dodo.readingnotes.dto.reflection.ClusterResult clusterOnly(Long userId, Long bookId) {
         var book = bookRepo.findById(bookId)
                 .orElseThrow(() -> new IllegalArgumentException("책을 찾을 수 없습니다."));
         List<ReadingRecord> records = recordRepo.findAllWithCommentByUserAndBook(userId, bookId);
         if (records.isEmpty()) {
-            sendError(emitter, "감상이 있는 기록이 없습니다. 먼저 기록에 감상을 남겨 주세요.");
-            emitter.complete();
-            return;
+            throw new IllegalArgumentException("감상이 있는 기록이 없습니다. 먼저 기록에 감상을 남겨 주세요.");
         }
         Optional<BookComment> bookCommentOpt = bookCommentRepo.findByUser_IdAndBook_Id(userId, bookId);
 
-        // 1. 묶기 (Haiku)
+        // 묶기
         String clusterRaw = llmClient.complete(
                 ReflectionPrompts.CLUSTER_SYSTEM,
                 buildClusterUserMsg(book.getTitle(), records, bookCommentOpt),
-                2000, CHEAP);
+                4000, CHEAP);
         JsonNode clusterJson = LooseJson.parse(clusterRaw);
         if (clusterJson == null) {
-            sendError(emitter, "묶기 단계 응답을 파싱하지 못했습니다.");
-            emitter.complete();
-            return;
+            log.error("묶기 파싱 실패. LLM 원문 응답:\n{}", clusterRaw);
+            throw new IllegalStateException("묶기 단계 응답을 파싱하지 못했습니다.");
         }
         String tone = clusterJson.path("tone").asText();
         List<ClusterDto> clusters = parseClusters(clusterJson.path("clusters"));
 
-        Map<String, Object> clusteredPayload = new LinkedHashMap<>();
-        clusteredPayload.put("tone", tone);
-        clusteredPayload.put("clusters", clusters);
-        sendEvent(emitter, "clustered", clusteredPayload);
-
-        // 2. 개요 (Haiku)
+        // 개요
         String outlineRaw = llmClient.complete(
                 ReflectionPrompts.COMPOSE_OUTLINE_SYSTEM,
                 buildOutlineUserMsg(book.getTitle(), tone, clusters),
                 1000, CHEAP);
         JsonNode outlineJson = LooseJson.parse(outlineRaw);
         if (outlineJson == null) {
-            sendError(emitter, "개요 단계 응답을 파싱하지 못했습니다.");
-            emitter.complete();
-            return;
+            log.error("개요 파싱 실패. LLM 원문 응답:\n{}", outlineRaw);
+            throw new IllegalStateException("개요 단계 응답을 파싱하지 못했습니다.");
         }
         String title = outlineJson.path("title").asText();
         String outlineTone = outlineJson.path("tone").asText();
         List<SectionOutlineDto> sections = parseSections(outlineJson.path("sections"));
 
-        Map<String, Object> outlinePayload = new LinkedHashMap<>();
-        outlinePayload.put("title", title);
-        outlinePayload.put("tone", outlineTone);
-        outlinePayload.put("sections", sections);
-        sendEvent(emitter, "outline", outlinePayload);
+        // 내부 DTO → 공개 DTO 변환
+        var clusterDtos = clusters.stream()
+                .map(c -> new me.dodo.readingnotes.dto.reflection.ClusterResult.ClusterDto(
+                        c.theme(), c.summary(), c.indices(), c.thin()))
+                .toList();
+        var sectionDtos = sections.stream()
+                .map(s -> new me.dodo.readingnotes.dto.reflection.ClusterResult.SectionDto(
+                        s.heading(), s.clusterIndices()))
+                .toList();
+        // 개요가 톤을 다시 정했으면 그걸 우선
+        String finalTone = (outlineTone != null && !outlineTone.isBlank()) ? outlineTone : tone;
+        return new me.dodo.readingnotes.dto.reflection.ClusterResult(finalTone, clusterDtos, title, sectionDtos);
+    }
 
-        // 3. 섹션별 본문 (Sonnet)
+    // ── 2단계: 섹션 엮기만 (SSE) ──────────────────────────────────────
+    public void composeSectionsAsync(Long userId, me.dodo.readingnotes.dto.reflection.ComposeRequest req, SseEmitter emitter) {
+        llmExecutor.submit(() -> {
+            try {
+                composeSections(userId, req, emitter);
+            } catch (Exception e) {
+                log.error("독후감 엮기 오류 userId={} bookId={}", userId, req.bookId(), e);
+                sendError(emitter, e.getMessage() != null ? e.getMessage() : "독후감 생성 중 오류가 발생했습니다.");
+                try { emitter.complete(); } catch (Exception ignored) {}
+            }
+        });
+    }
+
+    private void composeSections(Long userId, me.dodo.readingnotes.dto.reflection.ComposeRequest req, SseEmitter emitter) {
+        var book = bookRepo.findById(req.bookId())
+                .orElseThrow(() -> new IllegalArgumentException("책을 찾을 수 없습니다."));
+        // indices 매칭을 위해 묶기 때와 동일 순서로 다시 조회
+        List<ReadingRecord> records = recordRepo.findAllWithCommentByUserAndBook(userId, req.bookId());
+
+        String tone = req.tone();
+        // 공개 DTO → 내부 DTO 변환
+        List<ClusterDto> clusters = req.clusters().stream()
+                .map(c -> new ClusterDto(c.theme(), c.summary(), c.indices(), c.thin()))
+                .toList();
+        List<SectionOutlineDto> sections = req.sections().stream()
+                .map(s -> new SectionOutlineDto(s.heading(), s.clusterIndices()))
+                .toList();
+
         for (SectionOutlineDto section : sections) {
             String sectionRaw = llmClient.complete(
                     ReflectionPrompts.COMPOSE_SECTION_SYSTEM,
-                    buildSectionUserMsg(book.getTitle(), outlineTone, section, clusters, records),
+                    buildSectionUserMsg(book.getTitle(), tone, section, clusters, records),
                     4000, CHEAP);
             String body = extractSectionBody(sectionRaw);
 
@@ -127,8 +142,8 @@ public class ReflectionService {
             sectionPayload.put("heading", section.heading());
             sectionPayload.put("body", body);
             if (!sendEvent(emitter, "section", sectionPayload)) {
-                log.info("클라이언트 연결 끊김 — 섹션 생성 중단 userId 기준");
-                return; // 이미 끊긴 연결, 남은 섹션 생성은 헛수고
+                log.info("클라이언트 연결 끊김 — 섹션 생성 중단");
+                return;
             }
         }
 
@@ -147,12 +162,12 @@ public class ReflectionService {
         for (int i = 0; i < records.size(); i++) {
             ReadingRecord r = records.get(i);
             sb.append("[").append(i).append("] 문장: ")
-              .append(r.getSentence() != null ? r.getSentence() : "(없음)")
-              .append(" / 감상: ").append(r.getComment()).append("\n");
+                    .append(r.getSentence() != null ? r.getSentence() : "(없음)")
+                    .append(" / 감상: ").append(r.getComment()).append("\n");
         }
         bookCommentOpt.ifPresent(bc ->
-            sb.append("\n\n[자유 기록 — 특정 문장에 매인 게 아니라 책 전체에 대한 인상입니다. 이 내용은 \"전체 인상\" 묶음으로 다뤄 주세요.]\n")
-              .append(bc.getContent())
+                sb.append("\n\n[자유 기록 — 특정 문장에 매인 게 아니라 책 전체에 대한 인상입니다. 이 내용은 \"전체 인상\" 묶음으로 다뤄 주세요.]\n")
+                        .append(bc.getContent())
         );
         return sb.toString();
     }
@@ -165,9 +180,9 @@ public class ReflectionService {
         for (int i = 0; i < clusters.size(); i++) {
             ClusterDto c = clusters.get(i);
             sb.append("[묶음 ").append(i).append("] ")
-              .append(c.theme()).append(" / ")
-              .append(c.summary()).append(" / (")
-              .append(c.indices().size()).append("개 기록)\n");
+                    .append(c.theme()).append(" / ")
+                    .append(c.summary()).append(" / (")
+                    .append(c.indices().size()).append("개 기록)\n");
         }
         return sb.toString();
     }
@@ -201,8 +216,8 @@ public class ReflectionService {
         }
 
         sb.append("이 섹션에서 다룰 재료입니다. 각 항목의 \"감상\"이 독자가 실제로 쓴 말입니다. ")
-          .append("이 말투와 어휘를 그대로 살려서 쓰세요. ")
-          .append("독자가 쓴 표현을 그대로 두고, 끊긴 문장만 그 말투로 맺어 주세요.");
+                .append("이 말투와 어휘를 그대로 살려서 쓰세요. ")
+                .append("독자가 쓴 표현을 그대로 두고, 끊긴 문장만 그 말투로 맺어 주세요.");
 
         return sb.toString();
     }
