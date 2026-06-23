@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import jakarta.servlet.DispatcherType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -85,12 +86,17 @@ public class SecurityConfig {
                 )
                 // 이쪽 url들은 권한 없이 들어갈 수 있음
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // OPTIONS 허용
-                    .requestMatchers("/api/auth/**", "/api/login/**","/oauth2/**", "/login/**").permitAll()
-                    .requestMatchers("/api/notice").permitAll()  // 공지 조회는 인증 불필요
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // OPTIONS 허용
+                                // SSE/비동기 응답이 닫힐 때 필터 체인이 ASYNC/ERROR 디스패치로 다시 도는데,
+                                // 그때 인증 컨텍스트가 사라져 Access Denied가 남.
+                                // 이 디스패치 타입들을 인증에서 제외함.
+                                .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
+                                .requestMatchers("/api/auth/**", "/api/login/**","/oauth2/**", "/login/**").permitAll()
+                                .requestMatchers("/api/notice").permitAll()  // 공지 조회는 인증 불필요
+                                .requestMatchers("/error").permitAll()  // 비동기(SSE) 에러 디스패치가 Security에 막히지 않게
 //                    .requestMatchers("/records/me", "/records/me/**").authenticated()
-                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                    .anyRequest().authenticated()
+                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                                .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
