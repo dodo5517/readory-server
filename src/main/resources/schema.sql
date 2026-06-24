@@ -346,3 +346,19 @@ CREATE TABLE book_comments (
 );
 
 CREATE INDEX idx_bc_user_book ON book_comments (user_id, book_id);
+
+-- =========================
+-- Table: reflections
+-- =========================
+CREATE TABLE IF NOT EXISTS reflections (
+                                           id          BIGSERIAL PRIMARY KEY,
+                                           user_id     BIGINT NOT NULL,
+                                           book_id     BIGINT NOT NULL,
+                                           title       VARCHAR(500) NOT NULL,
+    content     TEXT NOT NULL,
+    created_at  TIMESTAMP NOT NULL,
+    updated_at  TIMESTAMP NOT NULL,
+    CONSTRAINT uq_reflection_user_book UNIQUE (user_id, book_id),
+    CONSTRAINT fk_reflection_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_reflection_book FOREIGN KEY (book_id) REFERENCES books(id)
+);

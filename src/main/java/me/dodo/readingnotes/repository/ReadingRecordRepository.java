@@ -318,6 +318,18 @@ public interface ReadingRecordRepository extends JpaRepository<ReadingRecord, Lo
                               @Param("prevSentence") String prevSentence);
 
 
+    // 독후감 재료: 특정 유저+책의 감상이 있는 기록 전체 (recorded_at 오름차순)
+    @Query("""
+        select r from ReadingRecord r
+        where r.user.id = :userId
+          and r.book.id = :bookId
+          and r.comment is not null and r.comment <> ''
+        order by r.recordedAt asc, r.id asc
+        """)
+    List<ReadingRecord> findAllWithCommentByUserAndBook(
+            @Param("userId") Long userId,
+            @Param("bookId") Long bookId);
+
     // 기록 상세 조회
     @Query("SELECT r FROM ReadingRecord r " +
             "JOIN FETCH r.user " +
