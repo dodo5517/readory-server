@@ -1,6 +1,10 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -8,6 +12,8 @@ import java.time.LocalDateTime;
 @Table(name = "books", uniqueConstraints = {
         @UniqueConstraint(name = "uq_isbn13", columnNames = "isbn13")
 })
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Book {
 
     @Id
@@ -42,46 +48,41 @@ public class Book {
 
     private LocalDateTime deletedAt;
 
+    public static Book createFrom(String title, String author, String publisher,
+                                   String isbn10, String isbn13, String coverUrl, LocalDate publishedDate) {
+        Book book = new Book();
+        book.title = title;
+        book.author = author;
+        book.publisher = publisher;
+        book.isbn10 = isbn10;
+        book.isbn13 = isbn13;
+        book.coverUrl = coverUrl;
+        book.publishedDate = publishedDate;
+        return book;
+    }
+
+    // 기존 책 메타데이터 갱신 (upsert 시 최신 정보로 반영)
+    public void updateFrom(String title, String author, String publisher,
+                            String isbn10, String isbn13, String coverUrl, LocalDate publishedDate) {
+        this.title = title;
+        this.author = author;
+        this.publisher = publisher;
+        this.isbn10 = isbn10;
+        this.isbn13 = isbn13;
+        this.coverUrl = coverUrl;
+        this.publishedDate = publishedDate;
+    }
+
+    public void markDeleted() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        this.deletedAt = null;
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-    // 기본 생성자(JPA 필수)
-    public Book() {
-    }
-
-    // Getter / Setter
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
-    public String getAuthor() { return author; }
-    public void setAuthor(String author) { this.author = author; }
-
-    public String getPublisher() { return publisher; }
-    public void setPublisher(String publisher) { this.publisher = publisher; }
-
-    public String getIsbn10() { return isbn10; }
-    public void setIsbn10(String isbn10) { this.isbn10 = isbn10; }
-
-    public String getIsbn13() { return isbn13; }
-    public void setIsbn13(String isbn13) { this.isbn13 = isbn13; }
-
-    public LocalDate getPublishedDate() { return publishedDate; }
-    public void setPublishedDate(LocalDate publishedDate) { this.publishedDate = publishedDate; }
-
-    public String getCoverUrl() { return coverUrl; }
-    public void setCoverUrl(String coverUrl) { this.coverUrl = coverUrl; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-
-    public LocalDateTime getDeletedAt() { return deletedAt; }
-    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
 }

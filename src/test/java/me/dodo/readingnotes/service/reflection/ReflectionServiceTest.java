@@ -51,9 +51,7 @@ class ReflectionServiceTest {
     }
 
     private Book book(String title) {
-        Book b = new Book();
-        b.setTitle(title);
-        return b;
+        return Book.createFrom(title, null, null, null, null, null, null);
     }
 
     private ReadingRecord record(String sentence, String comment) {

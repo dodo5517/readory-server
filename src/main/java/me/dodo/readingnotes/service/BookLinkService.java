@@ -65,6 +65,11 @@ public class BookLinkService {
     private Book upsertBook(LinkBookRequest r) {
         if (r.getIsbn13() != null && !r.getIsbn13().isBlank()) {
             return bookRepo.findByIsbn13(r.getIsbn13())
+                    .map(existing -> {
+                        existing.updateFrom(r.getTitle(), r.getAuthor(), r.getPublisher(),
+                                r.getIsbn10(), r.getIsbn13(), r.getCoverUrl(), parseFlexible(r.getPublishedDate()));
+                        return existing;
+                    })
                     .orElseGet(() -> bookRepo.save(toBook(r)));
         }
         // ISBN13이 없으면(기존 값이 없으면) 제목/저자 기준 신규 생성(나중에 중복 가능성 해결해야함)
@@ -73,15 +78,8 @@ public class BookLinkService {
 
     // 찾아온 책 정보 책 엔티티로 옮김
     private Book toBook(LinkBookRequest r) {
-        Book b = new Book();
-        b.setTitle(r.getTitle());
-        b.setAuthor(r.getAuthor());
-        b.setPublisher(r.getPublisher());
-        b.setIsbn10(r.getIsbn10());
-        b.setIsbn13(r.getIsbn13());
-        b.setCoverUrl(r.getCoverUrl());
-        // 날짜 파싱해서 저장
-        b.setPublishedDate(parseFlexible(r.getPublishedDate()));
+        Book b = Book.createFrom(r.getTitle(), r.getAuthor(), r.getPublisher(),
+                r.getIsbn10(), r.getIsbn13(), r.getCoverUrl(), parseFlexible(r.getPublishedDate()));
 
         log.debug("book: {}", b.toString());
         return b;

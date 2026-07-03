@@ -16,7 +16,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -66,7 +65,7 @@ public class BookService {
             throw new IllegalStateException("이미 삭제된 책입니다. id=" + id);
         }
 
-        book.setDeletedAt(LocalDateTime.now());
+        book.markDeleted();
     }
 
     // 관리자용 책 영구 삭제 (관리자 전용)
@@ -92,7 +91,7 @@ public class BookService {
             throw new IllegalStateException("삭제되지 않은 책입니다. id=" + id);
         }
 
-        book.setDeletedAt(null);
+        book.restore();
     }
     private String normalize(String v) {
         if (v == null) return null;
