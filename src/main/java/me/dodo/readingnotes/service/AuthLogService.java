@@ -71,19 +71,12 @@ public class AuthLogService {
                              HttpServletRequest request) {
 
         try {
-            UserAuthLog log = new UserAuthLog();
-            if (user != null) { log.setUser(user); }
-            else { log.setUser(null); }
-            log.setIdentifier(identifier);
-            log.setProvider(provider);
-            log.setEventType(UserAuthLog.AuthEventType.LOGIN_FAIL);
-            log.setResult(UserAuthLog.AuthResult.FAIL);
-            log.setFailReason(reason);
+            String ipAddress = request != null ? requestInfoExtractor.extractIp(request) : null;
+            String userAgent = request != null ? requestInfoExtractor.extractUserAgent(request) : null;
 
-            if (request != null) {
-                log.setIpAddress(requestInfoExtractor.extractIp(request));
-                log.setUserAgent(requestInfoExtractor.extractUserAgent(request));
-            }
+            UserAuthLog log = UserAuthLog.create(user, identifier, provider,
+                    UserAuthLog.AuthEventType.LOGIN_FAIL, UserAuthLog.AuthResult.FAIL, reason,
+                    ipAddress, userAgent);
 
             authLogRepository.save(log);
         } catch (Exception e) {
@@ -101,19 +94,11 @@ public class AuthLogService {
                             String failReason,
                             HttpServletRequest request) {
         try {
-            UserAuthLog log = new UserAuthLog();
+            String ipAddress = request != null ? requestInfoExtractor.extractIp(request) : null;
+            String userAgent = request != null ? requestInfoExtractor.extractUserAgent(request) : null;
 
-            log.setUser(user);
-            log.setIdentifier(identifier);
-            log.setProvider(provider);
-            log.setEventType(eventType);
-            log.setResult(result);
-            log.setFailReason(failReason);
-
-            if (request != null) {
-                log.setIpAddress(requestInfoExtractor.extractIp(request));
-                log.setUserAgent(requestInfoExtractor.extractUserAgent(request));
-            }
+            UserAuthLog log = UserAuthLog.create(user, identifier, provider,
+                    eventType, result, failReason, ipAddress, userAgent);
 
             authLogRepository.save(log);
         } catch (Exception e) {
