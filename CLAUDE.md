@@ -38,3 +38,12 @@
 
 ## 운영 프로파일 (라즈베리파이)
 --spring.profiles.active=prod
+
+## 엔티티 / DTO 컨벤션 (Lombok)
+- **엔티티**: `@Getter` + `@NoArgsConstructor(access = AccessLevel.PROTECTED)`만 허용.
+  `@Setter`, `@Data`, `@Builder`, `@ToString`, `@EqualsAndHashCode` 절대 금지.
+  - 생성은 정적 팩토리 메서드(`create`, `createFrom` 등), 상태 변경은 의도가 드러나는 도메인 메서드로만 한다.
+  - `setId()`는 어떤 엔티티에도 두지 않는다. 테스트에서 id가 필요하면 `ReflectionTestUtils.setField` 사용.
+  - LAZY 관계를 건드리는 필드는 수동 `toString()`에 포함하지 않는다.
+- **Request DTO**: `@Getter @Setter @NoArgsConstructor` 허용.
+- **Response DTO**: Lombok 대신 Java `record` 사용.
