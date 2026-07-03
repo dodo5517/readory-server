@@ -72,23 +72,14 @@ public class ReadingRecordService {
                 : userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
 
-        ReadingRecord record = new ReadingRecord();
-        record.setUser(user);
         String rawSentence = req.getSentence();
         String cleanedSentence = EbookSourceCleaner.clean(rawSentence);
-        record.setSentence(cleanedSentence);
-        if (rawSentence != null && !rawSentence.equals(cleanedSentence)) {
-            record.setSentenceOriginal(rawSentence);
-        }
-        record.setComment(req.getComment());
-        record.setRawTitle(req.getRawTitle());
-        record.setRawAuthor(req.getRawAuthor());
-        record.setCreatedAt(LocalDateTime.now());
-        // 날짜 선택하면 그때로 저장 없으면 지금 시간으로 저장.
-        record.setRecordedAt(
-                req.getRecordedAt() != null ? req.getRecordedAt() : LocalDateTime.now()
+        String sentenceOriginal = (rawSentence != null && !rawSentence.equals(cleanedSentence)) ? rawSentence : null;
+
+        ReadingRecord record = ReadingRecord.create(
+                user, cleanedSentence, sentenceOriginal, req.getComment(),
+                req.getRawTitle(), req.getRawAuthor(), req.getRecordedAt()
         );
-        record.setUpdatedAt(LocalDateTime.now());
 
         ReadingRecord saved = readingRecordRepository.save(record);
 
@@ -255,12 +246,8 @@ public class ReadingRecordService {
         log.debug("requet record: {}", request.toString());
 
         // null을 제외한 빈 문자열("")은 덮어쓰기함.
-        Optional.ofNullable(request.getRawTitle()).ifPresent(record::setRawTitle);
-        Optional.ofNullable(request.getRawAuthor()).ifPresent(record::setRawAuthor);
-        Optional.ofNullable(request.getSentence()).ifPresent(record::setSentence);
-        Optional.ofNullable(request.getComment()).ifPresent(record::setComment);
-        Optional.ofNullable(request.getRecordedAt()).ifPresent(record::setRecordedAt);
-        record.setUpdatedAt(LocalDateTime.now());
+        record.updateContent(request.getRawTitle(), request.getRawAuthor(), request.getSentence(),
+                request.getComment(), request.getRecordedAt());
 
         // 책 정보 변경 시
         if (request.getRawTitle() != null || request.getRawAuthor() != null) {
@@ -416,11 +403,8 @@ public class ReadingRecordService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 기록을 찾을 수 없습니다. id=" + id));
 
         // null이 아닌 필드만 업데이트
-        if (request.getRawTitle() != null) record.setRawTitle(request.getRawTitle());
-        if (request.getRawAuthor() != null) record.setRawAuthor(request.getRawAuthor());
-        if (request.getSentence() != null) record.setSentence(request.getSentence());
-        if (request.getComment() != null) record.setComment(request.getComment());
-        record.setUpdatedAt(LocalDateTime.now());
+        record.updateContent(request.getRawTitle(), request.getRawAuthor(), request.getSentence(),
+                request.getComment(), null);
 
         // 책 정보 변경 시 재매칭
         if (request.getRawTitle() != null || request.getRawAuthor() != null) {

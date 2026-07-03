@@ -149,15 +149,12 @@ public class EliciterService {
         for (ElicitSaveRequest.DrawnPair pair : req.pairs()) {
             if (pair.answer() == null || pair.answer().isBlank()) continue; // 감상 없는 쌍은 스킵
 
-            ReadingRecord r = new ReadingRecord();
-            r.setBook(book);
-            r.setUser(user);
             String question = pair.question() != null ? pair.question().strip() : "";
-            r.setSentence(truncate(QUESTION_PREFIX + question, 1000));
-            r.setComment(truncate(pair.answer().strip(), 1000));
-            r.setMatchStatus(ReadingRecord.MatchStatus.RESOLVED_MANUAL);
-            r.setRecordedAt(now);
-            r.setMatchedAt(now);
+            ReadingRecord r = ReadingRecord.create(
+                    user, truncate(QUESTION_PREFIX + question, 1000), null,
+                    truncate(pair.answer().strip(), 1000), null, null, now
+            );
+            r.matchBook(book, ReadingRecord.MatchStatus.RESOLVED_MANUAL);
             toSave.add(r);
         }
 

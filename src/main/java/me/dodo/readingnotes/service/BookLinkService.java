@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -44,9 +43,7 @@ public class BookLinkService {
         // 기록 연결
         ReadingRecord rec = recordRepo.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
-        rec.setBook(book); // 기록 엔티티에 책 정보 저장
-        rec.setMatchStatus(ReadingRecord.MatchStatus.RESOLVED_MANUAL); // 책 수동 매칭 완료
-        rec.setMatchedAt(LocalDateTime.now()); // 매칭된 시간 저장
+        rec.matchBook(book, ReadingRecord.MatchStatus.RESOLVED_MANUAL); // 책 수동 매칭 완료
     }
 
     // 책 자동 매칭
@@ -61,9 +58,7 @@ public class BookLinkService {
         // 기록 연결 + 상태 자동
         ReadingRecord rec = recordRepo.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
-        rec.setBook(book); // 기록 엔티티에 책 정보 저장
-        rec.setMatchStatus(ReadingRecord.MatchStatus.RESOLVED_AUTO); // 책 자동 매칭 완료
-        rec.setMatchedAt(LocalDateTime.now()); // 매칭된 시간 저장
+        rec.matchBook(book, ReadingRecord.MatchStatus.RESOLVED_AUTO); // 책 자동 매칭 완료
     }
 
     // Book 엔티티에 upsert
@@ -122,9 +117,7 @@ public class BookLinkService {
     public void removeBookMatch(Long recordId) {
         ReadingRecord rec = recordRepo.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
-        rec.setBook(null);
-        rec.setMatchStatus(ReadingRecord.MatchStatus.PENDING); // 비매칭으로 상태 변경
-        rec.setMatchedAt(LocalDateTime.now()); // 매칭상태 변경된 시간 저장
+        rec.unmatchBook(); // 비매칭으로 상태 변경
     }
     
     // 날짜 파싱

@@ -57,10 +57,7 @@ class ReflectionServiceTest {
     }
 
     private ReadingRecord record(String sentence, String comment) {
-        ReadingRecord r = new ReadingRecord();
-        r.setSentence(sentence);
-        r.setComment(comment);
-        return r;
+        return ReadingRecord.create(null, sentence, null, comment, null, null, null);
     }
 
     // 묶기 단계의 정상 JSON 응답
