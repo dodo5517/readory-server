@@ -1,6 +1,10 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,6 +17,8 @@ import java.time.LocalDateTime;
                 @Index(name = "idx_bsl_isbn13", columnList = "isbn13")
         }
 )
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BookSourceLink {
 
     @Id
@@ -42,32 +48,34 @@ public class BookSourceLink {
     @Column(columnDefinition = "TEXT")
     private String metaJson;
 
-    // 기본 생성자(JPA 필수)
-    public BookSourceLink() {
+    public static BookSourceLink create(Book book, String source, String externalId, String isbn10, String isbn13) {
+        BookSourceLink link = new BookSourceLink();
+        link.book = book;
+        link.source = source;
+        link.externalId = externalId;
+        link.isbn10 = isbn10;
+        link.isbn13 = isbn13;
+        return link;
     }
 
-    // Getter / Setter
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // 기존 링크 재매칭 시 책/ISBN 갱신
+    public void relinkBook(Book book, String isbn10, String isbn13) {
+        this.book = book;
+        this.isbn10 = isbn10;
+        this.isbn13 = isbn13;
+    }
 
-    public Book getBook() { return book; }
-    public void setBook(Book book) { this.book = book; }
+    public void attachMetaJson(String metaJson) {
+        this.metaJson = metaJson;
+    }
 
-    public String getSource() { return source; }
-    public void setSource(String source) { this.source = source; }
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 
-    public String getExternalId() { return externalId; }
-    public void setExternalId(String externalId) { this.externalId = externalId; }
-
-    public String getIsbn10() { return isbn10; }
-    public void setIsbn10(String isbn10) { this.isbn10 = isbn10; }
-
-    public String getIsbn13() { return isbn13; }
-    public void setIsbn13(String isbn13) { this.isbn13 = isbn13; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public String getMetaJson() { return metaJson; }
-    public void setMetaJson(String metaJson) { this.metaJson = metaJson; }
+    @PreUpdate
+    public void preUpdate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

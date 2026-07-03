@@ -91,18 +91,16 @@ public class BookLinkService {
         if (r.getSource() == "LOCAL") return; // LOCAL은 pass
         // 기존 값 없으면 새로 생성
         BookSourceLink link = linkRepo.findBySourceAndExternalId(r.getSource(), r.getExternalId())
-                .orElseGet(BookSourceLink::new);
-        link.setBook(book);
-        link.setSource(r.getSource());
-        link.setExternalId(r.getExternalId());
-        link.setIsbn10(r.getIsbn10());
-        link.setIsbn13(r.getIsbn13());
+                .map(existing -> {
+                    existing.relinkBook(book, r.getIsbn10(), r.getIsbn13());
+                    return existing;
+                })
+                .orElseGet(() -> BookSourceLink.create(book, r.getSource(), r.getExternalId(), r.getIsbn10(), r.getIsbn13()));
         // 자동 매칭이라면 점수/원문 스냅샷을 남겨 추적 가능하게 함
         if (metaJson != null && !metaJson.isBlank()) {
             // 기존 수동 흐름과 충돌하지 않게 누적 또는 덮어쓰기 전략 택1
-            link.setMetaJson(metaJson);
+            link.attachMetaJson(metaJson);
         }
-        link.setCreatedAt(java.time.LocalDateTime.now());
         linkRepo.save(link);
     }
     // 수동 매칭 시 사용
