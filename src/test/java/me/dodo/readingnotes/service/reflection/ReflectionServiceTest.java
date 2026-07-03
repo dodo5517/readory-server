@@ -222,8 +222,7 @@ class ReflectionServiceTest {
         when(bookRepo.findById(BOOK_ID)).thenReturn(Optional.of(book("책")));
         when(recordRepo.findAllWithCommentByUserAndBook(USER_ID, BOOK_ID))
                 .thenReturn(List.of(record("문장", "감상")));
-        BookComment bc = new BookComment();
-        bc.setContent("이 책은 내 인생을 바꿨다");
+        BookComment bc = BookComment.create(null, null, "이 책은 내 인생을 바꿨다");
         when(bookCommentRepo.findByUser_IdAndBook_Id(USER_ID, BOOK_ID)).thenReturn(Optional.of(bc));
         when(llmClient.complete(any(), any(), anyInt(), eq(CHEAP)))
                 .thenReturn(clusterJson(), outlineJson("따뜻함"));
