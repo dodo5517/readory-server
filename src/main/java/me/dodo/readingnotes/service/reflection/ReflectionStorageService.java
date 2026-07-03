@@ -37,17 +37,14 @@ public class ReflectionStorageService {
     public ReflectionResponse save(Long userId, ReflectionSaveRequest req) {
         Reflection r = reflectionRepo.findByUser_IdAndBook_Id(userId, req.bookId())
                 .orElseGet(() -> {
-                    Reflection n = new Reflection();
                     Book book = bookRepo.findById(req.bookId())
                             .orElseThrow(() -> new IllegalArgumentException("책을 찾을 수 없습니다."));
                     User user = userRepo.findById(userId)
                             .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-                    n.setBook(book);
-                    n.setUser(user);
-                    return n;
+                    return Reflection.create(user, book, "", "");
                 });
-        r.setTitle(req.title() != null ? req.title() : "");
-        r.setContent(req.content() != null ? req.content() : "");
+        r.updateTitle(req.title() != null ? req.title() : "");
+        r.updateContent(req.content() != null ? req.content() : "");
         Reflection saved = reflectionRepo.save(r);
         return toResponse(saved);
     }
