@@ -44,7 +44,7 @@ public class UserController {
     @PostMapping
     public ApiResponse<UserResponse> registerUser(@RequestBody @Valid UserRequest request) {
         log.debug("회원가입 요청(request): {}", request.toString());
-        User savedUser = userService.registerUser(request.toEntity());
+        User savedUser = userService.registerUser(request.getEmail(), request.getUsername(), request.getPassword());
         return ApiResponse.success(new UserResponse(savedUser));
     }
 

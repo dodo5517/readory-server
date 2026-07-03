@@ -1,6 +1,9 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -8,6 +11,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name= "users")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
     @Id
@@ -31,7 +36,7 @@ public class User {
 
     @Column(name = "api_key", nullable = false, unique = true, length = 100)
     private String apiKey; // api_key, 모두 있어야 함
-    
+
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl; // 프로필 사진
 
@@ -53,10 +58,6 @@ public class User {
 
     public enum UserStatus { ACTIVE, BLOCKED, SUSPENDED }
 
-    // 기본 생성자(JPA 필수)
-    public User(){
-    }
-
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -70,93 +71,50 @@ public class User {
                 '}';
     }
 
-
-    // Getter / Setter
-    public Long getId() {
-        return id;
-    }
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public String getProviderId() {
-        return providerId;
-    }
-    public void setProviderId(String providerId) {
-        this.providerId = providerId;
-    }
-
-    public String getApiKey() {
-        return apiKey;
-    }
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-
-    public String getProfileImageUrl() {
-        return profileImageUrl;
-    }
-    public void setProfileImageUrl(String profileImageUrl) {
-        this.profileImageUrl = profileImageUrl;
-    }
-
-    public UserStatus getUserStatus() { return userStatus; }
-    public void setUserStatus(UserStatus userStatus) { this.userStatus = userStatus; }
-
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    public static User createLocal(String email, String username, String encodedPassword, String apiKey) {
+        User user = new User();
+        user.email = email;
+        user.username = username;
+        user.password = encodedPassword;
+        user.apiKey = apiKey;
+        user.provider = "local";
+        user.role = "USER";
+        return user;
     }
 
     public static User fromSocial(String email, String username, String provider, String providerId, String apiKey) {
         User user = new User();
-        user.setEmail(email);
-        user.setUsername(username);
-        user.setProvider(provider);
-        user.setProviderId(providerId);
-        user.setApiKey(apiKey);
-        user.setRole("USER");
+        user.email = email;
+        user.username = username;
+        user.provider = provider;
+        user.providerId = providerId;
+        user.apiKey = apiKey;
+        user.role = "USER";
         return user;
+    }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    public void changeUsername(String username) {
+        this.username = username;
+    }
+
+    public void changeProfileImage(String url) {
+        this.profileImageUrl = url;
+    }
+
+    public void changeStatus(UserStatus status) {
+        this.userStatus = status;
+    }
+
+    public void changeRole(String role) {
+        this.role = role;
+    }
+
+    public void reissueApiKey(String newApiKey) {
+        this.apiKey = newApiKey;
     }
 
 }

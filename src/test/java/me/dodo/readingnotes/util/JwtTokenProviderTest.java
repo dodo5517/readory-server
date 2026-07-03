@@ -28,10 +28,8 @@ class JwtTokenProviderTest {
     }
 
     private User user() {
-        User u = new User();
-        u.setId(100L);
-        u.setEmail("reader@readory.app");
-        u.setRole("USER");
+        User u = User.createLocal("reader@readory.app", "reader", "encoded", "api-key");
+        ReflectionTestUtils.setField(u, "id", 100L);
         return u;
     }
 
