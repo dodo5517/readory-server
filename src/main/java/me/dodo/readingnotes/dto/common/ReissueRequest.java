@@ -1,7 +1,13 @@
 package me.dodo.readingnotes.dto.common;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
 public class ReissueRequest {
 
     @NotBlank
@@ -17,10 +23,4 @@ public class ReissueRequest {
                 ", deviceInfo='" + deviceInfo + '\'' +
                 '}';
     }
-
-    public String getRefreshToken() { return refreshToken; }
-    public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
-
-    public String getDeviceInfo() { return deviceInfo; }
-    public void setDeviceInfo(String deviceInfo) { this.deviceInfo = deviceInfo; }
 }
