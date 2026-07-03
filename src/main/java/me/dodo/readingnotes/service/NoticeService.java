@@ -7,7 +7,6 @@ import me.dodo.readingnotes.repository.NoticeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,9 +54,8 @@ public class NoticeService {
     public NoticeResponse updateNotice(Long id, NoticeUpdateRequest request) {
         Notice notice = noticeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("공지를 찾을 수 없습니다."));
-        if (request.getMessage() != null) notice.setMessage(request.getMessage());
-        if (request.getEnabled() != null) notice.setEnabled(request.getEnabled());
-        notice.setUpdatedAt(LocalDateTime.now());
+        if (request.getMessage() != null) notice.updateMessage(request.getMessage());
+        if (request.getEnabled() != null) notice.changeEnabled(request.getEnabled());
         return toResponse(noticeRepository.save(notice));
     }
 
@@ -66,17 +64,15 @@ public class NoticeService {
     public NoticeResponse createNotice(NoticeUpdateRequest request) {
         noticeRepository.findAll().forEach(n -> {
             if (n.isEnabled()) {
-                n.setEnabled(false);
-                n.setUpdatedAt(LocalDateTime.now());
+                n.changeEnabled(false);
                 noticeRepository.save(n);
             }
         });
 
-        Notice notice = new Notice();
-        notice.setMessage(request.getMessage() != null ? request.getMessage() : "");
-        notice.setEnabled(request.getEnabled() != null ? request.getEnabled() : true);
-        notice.setCreatedAt(LocalDateTime.now());
-        notice.setUpdatedAt(LocalDateTime.now());
+        Notice notice = Notice.create(
+                request.getMessage() != null ? request.getMessage() : "",
+                request.getEnabled() != null ? request.getEnabled() : true
+        );
         return toResponse(noticeRepository.save(notice));
     }
 }
