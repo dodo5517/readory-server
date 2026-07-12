@@ -70,8 +70,8 @@ public class ReadingCalendarService {
         }
 
         int totalDaysWithRecord = days.size();
-        String first = totalDaysWithRecord == 0 ? null : days.get(0).getDate().toString();
-        String last  = totalDaysWithRecord == 0 ? null : days.get(totalDaysWithRecord - 1).getDate().toString();
+        String first = totalDaysWithRecord == 0 ? null : days.get(0).date().toString();
+        String last  = totalDaysWithRecord == 0 ? null : days.get(totalDaysWithRecord - 1).date().toString();
 
         CalendarSummary summary = new CalendarSummary(totalDaysWithRecord, totalRecords, first, last);
         return new CalendarResponse(startDate, endDate, days, summary);
