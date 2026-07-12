@@ -33,7 +33,7 @@ public class LogService {
         String lowKw = (kw == null) ? null : "%" + kw.toLowerCase() + "%";
 
         return authLogRepository.searchLogs(lowKw, type, result, pageable)
-                .map(AuthLogListResponse::new);
+                .map(AuthLogListResponse::from);
     }
 
     // 특정 인증 로그 조회
@@ -41,7 +41,7 @@ public class LogService {
     public AuthLogDetailResponse findAuthLog(Long id) {
         UserAuthLog log = authLogRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 ID의 로그가 없습니다."));
-        return new AuthLogDetailResponse(log);
+        return AuthLogDetailResponse.from(log);
     }
 
     // 전체 API 로그 조회
@@ -60,7 +60,7 @@ public class LogService {
         if (m != null) m = m.toUpperCase(); // GET/POST 보통 대문자라서 정규화
 
         return apiLogRepository.searchLogs(lowKw, result, statusCode, m, pageable)
-                .map(ApiLogListResponse::new);
+                .map(ApiLogListResponse::from);
     }
 
     // 특정 API 로그 조회
@@ -68,7 +68,7 @@ public class LogService {
     public ApiLogDetailResponse findApiLog(Long id) {
         ApiLog log = apiLogRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 ID의 로그가 없습니다."));
-        return new ApiLogDetailResponse(log);
+        return ApiLogDetailResponse.from(log);
     }
 
     private String normalize(String v) {
