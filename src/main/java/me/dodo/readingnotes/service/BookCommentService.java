@@ -32,7 +32,7 @@ public class BookCommentService {
     @Transactional(readOnly = true)
     public BookCommentResponse getComment(Long userId, Long bookId) {
         return bookCommentRepository.findByUser_IdAndBook_Id(userId, bookId)
-                .map(BookCommentResponse::new)
+                .map(BookCommentResponse::from)
                 .orElse(null);
     }
 
@@ -61,7 +61,7 @@ public class BookCommentService {
             comment = BookComment.create(user, book, content.trim());
         }
 
-        return new BookCommentResponse(bookCommentRepository.save(comment));
+        return BookCommentResponse.from(bookCommentRepository.save(comment));
     }
 
     // 책 코멘트 삭제

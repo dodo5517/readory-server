@@ -200,7 +200,7 @@ public class ReadingRecordService {
         // 책 코멘트 조회
         BookCommentResponse bookComment = bookCommentRepository
                 .findByUser_IdAndBook_Id(userId, bookId)
-                .map(BookCommentResponse::new)
+                .map(BookCommentResponse::from)
                 .orElse(null);
 
         return new BookRecordsPageResponse(bookMeta, bookComment, items, nextCursor, hasMore);
