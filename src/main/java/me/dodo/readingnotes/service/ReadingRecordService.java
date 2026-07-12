@@ -323,7 +323,7 @@ public class ReadingRecordService {
 
         return readingRecordRepository
                 .findAllForAdmin(keyword, matchStatus, userId, pageable)
-                .map(AdminRecordListResponse::new);
+                .map(AdminRecordListResponse::from);
     }
 
     // 특정 기록 상세 조회 sentence, comment는 응답에 포함되지 않음
@@ -331,7 +331,7 @@ public class ReadingRecordService {
     public AdminRecordDetailResponse findRecordByIdForAdmin(Long id) {
         ReadingRecord record = readingRecordRepository.findByIdForAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 기록을 찾을 수 없습니다. id=" + id));
-        return new AdminRecordDetailResponse(record);
+        return AdminRecordDetailResponse.from(record);
     }
 
     // 통계 조회 개인 식별 없이 집계 데이터만 반환
@@ -417,7 +417,7 @@ public class ReadingRecordService {
         }
 
         ReadingRecord saved = readingRecordRepository.save(record);
-        return new AdminRecordDetailResponse(saved);
+        return AdminRecordDetailResponse.from(saved);
     }
 
     // 기록 삭제 (userId 체크 없음)
