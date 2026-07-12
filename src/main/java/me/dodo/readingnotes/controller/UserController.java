@@ -45,7 +45,7 @@ public class UserController {
     public ApiResponse<UserResponse> registerUser(@RequestBody @Valid UserRequest request) {
         log.debug("회원가입 요청(request): {}", request.toString());
         User savedUser = userService.registerUser(request.getEmail(), request.getUsername(), request.getPassword());
-        return ApiResponse.success(new UserResponse(savedUser));
+        return ApiResponse.success(UserResponse.from(savedUser));
     }
 
     // 로그인한 유저의 정보 조회
@@ -53,7 +53,7 @@ public class UserController {
     public ApiResponse<UserResponse> getMe(HttpServletRequest request) {
         Long userId = resolveUserId(request);
         User user = userService.findUserById(userId);
-        return ApiResponse.success(new UserResponse(user));
+        return ApiResponse.success(UserResponse.from(user));
     }
 
     // 유저 프로필 사진 업로드
