@@ -49,7 +49,7 @@ public class AuthController {
         ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(result.getRefreshToken());
         httpResponse.addHeader("Set-Cookie", refreshCookie.toString());
 
-        AuthResponse authResponse = new AuthResponse("로그인 성공", new UserResponse(result.getUser()),
+        AuthResponse authResponse = new AuthResponse("로그인 성공", UserResponse.from(result.getUser()),
                 result.getAccessToken(), null, result.getExpiresIn(), result.getServerTime());
 
         return ResponseEntity.ok(ApiResponse.success("로그인 성공", authResponse));
@@ -111,7 +111,7 @@ public class AuthController {
         ResponseCookie refreshCookie = cookieUtil.createRefreshTokenCookie(result.getRefreshToken());
         httpResponse.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
-        AuthResponse authResponse = new AuthResponse("토큰 재발급 성공", new UserResponse(result.getUser()),
+        AuthResponse authResponse = new AuthResponse("토큰 재발급 성공", UserResponse.from(result.getUser()),
                 result.getAccessToken(), null, result.getExpiresIn(), result.getServerTime());
 
         return ResponseEntity.ok(ApiResponse.success("토큰 재발급 성공", authResponse));

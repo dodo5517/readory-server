@@ -45,14 +45,14 @@ public class BookService {
         boolean includeDeletedValue = includeDeleted != null && includeDeleted;
         String kw = normalize(keyword);
         return bookRepository.findAllForAdmin(kw, includeDeletedValue, pageable)
-                .map(BookListResponse::new);
+                .map(BookListResponse::from);
     }
 
     // 관리자용 책 상세 조회
     public BookDetailResponse findBookById(Long id) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 책을 찾을 수 없습니다. id=" + id));
-        return new BookDetailResponse(book);
+        return BookDetailResponse.from(book);
     }
 
     // 관리자용 책 소프트 삭제

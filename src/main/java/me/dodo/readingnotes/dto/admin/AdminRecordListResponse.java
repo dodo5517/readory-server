@@ -1,38 +1,27 @@
 package me.dodo.readingnotes.dto.admin;
 
 import me.dodo.readingnotes.domain.ReadingRecord;
+
 import java.time.LocalDateTime;
 
-public class AdminRecordListResponse {
-    private Long id;
-    private String username;
-    private String rawTitle;
-    private String rawAuthor;
-    private ReadingRecord.MatchStatus matchStatus;
-    private LocalDateTime createdAt;
-    private LocalDateTime recordedAt;
-
-    public AdminRecordListResponse(ReadingRecord record) {
-        this.id = record.getId();
-        this.username = record.getUser().getUsername();
-        this.rawTitle = record.getRawTitle();
-        this.rawAuthor = record.getRawAuthor();
-        this.matchStatus = record.getMatchStatus();
-        this.createdAt = record.getCreatedAt();
-        this.recordedAt = record.getRecordedAt();
+public record AdminRecordListResponse(
+        Long id,
+        String username,
+        String rawTitle,
+        String rawAuthor,
+        ReadingRecord.MatchStatus matchStatus,
+        LocalDateTime createdAt,
+        LocalDateTime recordedAt
+) {
+    public static AdminRecordListResponse from(ReadingRecord record) {
+        return new AdminRecordListResponse(
+                record.getId(),
+                record.getUser().getUsername(),
+                record.getRawTitle(),
+                record.getRawAuthor(),
+                record.getMatchStatus(),
+                record.getCreatedAt(),
+                record.getRecordedAt()
+        );
     }
-
-    private String truncate(String str, int maxLength) {
-        if (str == null) return null;
-        return str.length() > maxLength ? str.substring(0, maxLength) + "..." : str;
-    }
-
-    // Getters
-    public Long getId() { return id; }
-    public String getUsername() { return username; }
-    public String getRawTitle() { return rawTitle; }
-    public String getRawAuthor() { return rawAuthor; }
-    public ReadingRecord.MatchStatus getMatchStatus() { return matchStatus; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getRecordedAt() { return recordedAt; }
 }

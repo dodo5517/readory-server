@@ -2,28 +2,22 @@ package me.dodo.readingnotes.dto.log;
 
 import me.dodo.readingnotes.domain.UserAuthLog;
 
-public class AuthLogListResponse {
-    private Long id;
-    private Long userId;
-    private UserAuthLog.AuthEventType eventType;
-    private UserAuthLog.AuthResult result;
-    private String ipAddress;
-    private String createdAt;
-
-    public AuthLogListResponse(UserAuthLog userAuthLog) {
-        this.id = userAuthLog.getId();
-        this.userId = (userAuthLog.getUser() != null ? userAuthLog.getUser().getId() : null);
-        this.eventType = userAuthLog.getEventType();
-        this.result = userAuthLog.getResult();
-        this.ipAddress = userAuthLog.getIpAddress();
-        this.createdAt = userAuthLog.getCreatedAt().toString();
+public record AuthLogListResponse(
+        Long id,
+        Long userId,
+        UserAuthLog.AuthEventType eventType,
+        UserAuthLog.AuthResult result,
+        String ipAddress,
+        String createdAt
+) {
+    public static AuthLogListResponse from(UserAuthLog userAuthLog) {
+        return new AuthLogListResponse(
+                userAuthLog.getId(),
+                userAuthLog.getUser() != null ? userAuthLog.getUser().getId() : null,
+                userAuthLog.getEventType(),
+                userAuthLog.getResult(),
+                userAuthLog.getIpAddress(),
+                userAuthLog.getCreatedAt().toString()
+        );
     }
-
-    public Long getId() { return id; }
-    public Long getUserId() { return userId; }
-    public UserAuthLog.AuthEventType getEventType() { return eventType; }
-    public UserAuthLog.AuthResult getResult() { return result; }
-    public String getIpAddress() { return ipAddress; }
-    public String getCreatedAt() { return createdAt; }
-
 }

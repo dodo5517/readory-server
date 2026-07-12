@@ -1,75 +1,62 @@
 package me.dodo.readingnotes.dto.admin;
 
 import me.dodo.readingnotes.domain.ReadingRecord;
+
 import java.time.LocalDateTime;
 
-public class AdminRecordDetailResponse {
-    private Long id;
-
-    // 유저 정보
-    private Long userId;
-    private String username;
-    private String userEmail;
-
-    // 책 정보 (매칭된 경우)
-    private Long bookId;
-    private String bookTitle;
-    private String bookAuthor;
-    private String bookCoverUrl;
-
-    // 원본 입력값
-    private String rawTitle;
-    private String rawAuthor;
-
-    // 상태 및 시간
-    private ReadingRecord.MatchStatus matchStatus;
-    private LocalDateTime createdAt;
-    private LocalDateTime recordedAt;
-    private LocalDateTime updatedAt;
-    private LocalDateTime matchedAt;
-
-    public AdminRecordDetailResponse(ReadingRecord record) {
-        this.id = record.getId();
+public record AdminRecordDetailResponse(
+        Long id,
 
         // 유저 정보
-        this.userId = record.getUser().getId();
-        this.username = record.getUser().getUsername();
-        this.userEmail = record.getUser().getEmail();
+        Long userId,
+        String username,
+        String userEmail,
 
-        // 책 정보
-        if (record.getBook() != null) {
-            this.bookId = record.getBook().getId();
-            this.bookTitle = record.getBook().getTitle();
-            this.bookAuthor = record.getBook().getAuthor();
-            this.bookCoverUrl = record.getBook().getCoverUrl();
-        }
+        // 책 정보 (매칭된 경우)
+        Long bookId,
+        String bookTitle,
+        String bookAuthor,
+        String bookCoverUrl,
 
         // 원본 입력값
-        this.rawTitle = record.getRawTitle();
-        this.rawAuthor = record.getRawAuthor();
+        String rawTitle,
+        String rawAuthor,
 
         // 상태 및 시간
-        this.matchStatus = record.getMatchStatus();
-        this.createdAt = record.getCreatedAt();
-        this.recordedAt = record.getRecordedAt();
-        this.updatedAt = record.getUpdatedAt();
-        this.matchedAt = record.getMatchedAt();
-    }
+        ReadingRecord.MatchStatus matchStatus,
+        LocalDateTime createdAt,
+        LocalDateTime recordedAt,
+        LocalDateTime updatedAt,
+        LocalDateTime matchedAt
+) {
+    public static AdminRecordDetailResponse from(ReadingRecord record) {
+        Long bookId = null;
+        String bookTitle = null;
+        String bookAuthor = null;
+        String bookCoverUrl = null;
+        if (record.getBook() != null) {
+            bookId = record.getBook().getId();
+            bookTitle = record.getBook().getTitle();
+            bookAuthor = record.getBook().getAuthor();
+            bookCoverUrl = record.getBook().getCoverUrl();
+        }
 
-    // Getters
-    public Long getId() { return id; }
-    public Long getUserId() { return userId; }
-    public String getUsername() { return username; }
-    public String getUserEmail() { return userEmail; }
-    public Long getBookId() { return bookId; }
-    public String getBookTitle() { return bookTitle; }
-    public String getBookAuthor() { return bookAuthor; }
-    public String getBookCoverUrl() { return bookCoverUrl; }
-    public String getRawTitle() { return rawTitle; }
-    public String getRawAuthor() { return rawAuthor; }
-    public ReadingRecord.MatchStatus getMatchStatus() { return matchStatus; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getRecordedAt() { return recordedAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public LocalDateTime getMatchedAt() { return matchedAt; }
+        return new AdminRecordDetailResponse(
+                record.getId(),
+                record.getUser().getId(),
+                record.getUser().getUsername(),
+                record.getUser().getEmail(),
+                bookId,
+                bookTitle,
+                bookAuthor,
+                bookCoverUrl,
+                record.getRawTitle(),
+                record.getRawAuthor(),
+                record.getMatchStatus(),
+                record.getCreatedAt(),
+                record.getRecordedAt(),
+                record.getUpdatedAt(),
+                record.getMatchedAt()
+        );
+    }
 }

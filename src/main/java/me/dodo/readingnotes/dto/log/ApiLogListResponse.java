@@ -4,45 +4,32 @@ import me.dodo.readingnotes.domain.ApiLog;
 
 import java.time.LocalDateTime;
 
-public class ApiLogListResponse {
+public record ApiLogListResponse(
+        Long id,
+        LocalDateTime createdAt,
 
+        String method,
+        String path,
 
-    private Long id;
-    private LocalDateTime createdAt;
+        int statusCode,
+        ApiLog.Result result,
 
-    private String method;
-    private String path;
+        Integer executionTimeMs,
 
-    private int statusCode;
-    private ApiLog.Result result;
-
-    private Integer executionTimeMs;
-
-    private Long userId;
-    private String userRole;
-
-
-    public ApiLogListResponse(ApiLog log) {
-        this.id = log.getId();
-        this.createdAt = log.getCreatedAt();
-        this.method = log.getMethod();
-        this.path = log.getPath();
-        this.statusCode = log.getStatusCode();
-        this.result = log.getResult();
-        this.executionTimeMs = log.getExecutionTimeMs();
-        this.userId = log.getUser() == null ? null : log.getUser().getId();
-        this.userRole = log.getUserRole();
+        Long userId,
+        String userRole
+) {
+    public static ApiLogListResponse from(ApiLog log) {
+        return new ApiLogListResponse(
+                log.getId(),
+                log.getCreatedAt(),
+                log.getMethod(),
+                log.getPath(),
+                log.getStatusCode(),
+                log.getResult(),
+                log.getExecutionTimeMs(),
+                log.getUser() == null ? null : log.getUser().getId(),
+                log.getUserRole()
+        );
     }
-
-    // getters
-    public Long getId() { return id; }
-    public Long getUserId() { return userId; }
-    public String getUserRole() { return userRole; }
-    public String getMethod() { return method; }
-    public String getPath() { return path; }
-    public int getStatusCode() { return statusCode; }
-    public ApiLog.Result getResult() { return result; }
-    public int getExecutionTimeMs() { return executionTimeMs; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-
 }

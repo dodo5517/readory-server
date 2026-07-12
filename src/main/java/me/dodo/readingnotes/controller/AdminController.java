@@ -85,7 +85,7 @@ public class AdminController {
     @GetMapping("/users/{id}")
     public ApiResponse<AdminPageUserResponse> getUser(@PathVariable Long id) {
 
-        return ApiResponse.success(new AdminPageUserResponse(userService.findUserById(id)));
+        return ApiResponse.success(AdminPageUserResponse.from(userService.findUserById(id)));
     }
 
     @PatchMapping("/users/{id}/username")

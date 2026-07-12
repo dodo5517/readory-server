@@ -209,7 +209,7 @@ public class UserService {
         String rl = normalize(role);
 
         return userRepository.searchUsers(kw, pv, rl, pageable)
-                .map(AdminPageUserResponse::new);
+                .map(AdminPageUserResponse::from);
     }
 
     // ID로 유저 조회

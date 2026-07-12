@@ -19,15 +19,11 @@ public class NoticeService {
         this.noticeRepository = noticeRepository;
     }
 
-    private NoticeResponse toResponse(Notice n) {
-        return new NoticeResponse(n.getId(), n.getMessage(), n.isEnabled(), n.getCreatedAt(), n.getUpdatedAt());
-    }
-
     // 활성화된 공지 조회 (없으면 null 반환)
     @Transactional(readOnly = true)
     public NoticeResponse getActiveNotice() {
         return noticeRepository.findTopByEnabledTrueOrderByUpdatedAtDesc()
-                .map(this::toResponse)
+                .map(NoticeResponse::from)
                 .orElse(null);
     }
 
@@ -36,7 +32,7 @@ public class NoticeService {
     public NoticeResponse getNoticeForAdmin() {
         return noticeRepository.findTopByEnabledTrueOrderByUpdatedAtDesc()
                 .or(() -> noticeRepository.findAllByOrderByCreatedAtDesc().stream().findFirst())
-                .map(this::toResponse)
+                .map(NoticeResponse::from)
                 .orElse(null);
     }
 
@@ -45,7 +41,7 @@ public class NoticeService {
     public List<NoticeResponse> getAllNotices() {
         return noticeRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(this::toResponse)
+                .map(NoticeResponse::from)
                 .collect(Collectors.toList());
     }
 
@@ -56,7 +52,7 @@ public class NoticeService {
                 .orElseThrow(() -> new IllegalArgumentException("공지를 찾을 수 없습니다."));
         if (request.getMessage() != null) notice.updateMessage(request.getMessage());
         if (request.getEnabled() != null) notice.changeEnabled(request.getEnabled());
-        return toResponse(noticeRepository.save(notice));
+        return NoticeResponse.from(noticeRepository.save(notice));
     }
 
     // 관리자용: 새 공지 insert (이전 공지 전부 비활성화)
@@ -73,6 +69,6 @@ public class NoticeService {
                 request.getMessage() != null ? request.getMessage() : "",
                 request.getEnabled() != null ? request.getEnabled() : true
         );
-        return toResponse(noticeRepository.save(notice));
+        return NoticeResponse.from(noticeRepository.save(notice));
     }
 }

@@ -71,7 +71,7 @@ public class ReadingRecordController {
         size = clampSize(size);
         List<ReadingRecord> list = service.getLatestRecords(userId, size);
         log.debug("list: {}", list.toString());
-        return ApiResponse.success(list.stream().map(ReadingRecordResponse::new).collect(Collectors.toList()));
+        return ApiResponse.success(list.stream().map(ReadingRecordResponse::from).collect(Collectors.toList()));
     }
 
     // 해당 유저의 모든 기록 조회
@@ -83,7 +83,7 @@ public class ReadingRecordController {
             @RequestParam(value = "q", required = false) String q) {
         Long userId = resolveUserId(request);
         Page<ReadingRecord> page = service.getMyRecords(userId, scope, q, pageable);
-        return ApiResponse.success(PageResponse.from(page.map(ReadingRecordResponse::new)));
+        return ApiResponse.success(PageResponse.from(page.map(ReadingRecordResponse::from)));
     }
 
     // 해당 유저가 읽은 책 중 매핑이 끝난 N(default=20)개 책들 조회
