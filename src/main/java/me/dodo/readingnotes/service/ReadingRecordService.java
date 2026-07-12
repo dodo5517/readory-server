@@ -265,7 +265,7 @@ public class ReadingRecordService {
         ReadingRecord saved = readingRecordRepository.save(record);
 
         // DTO로 변환
-        return ReadingRecordResponse.fromEntity(saved);
+        return ReadingRecordResponse.from(saved);
     }
 
     // 기록 삭제

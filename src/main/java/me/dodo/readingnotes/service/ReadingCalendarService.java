@@ -83,7 +83,7 @@ public class ReadingCalendarService {
         LocalDateTime start = day.atStartOfDay();
         LocalDateTime end   = day.plusDays(1).atStartOfDay();
         return repo.findRecordsInRange(userId, start, end, q, pageable)
-                   .map(ReadingRecordResponse::new);
+                   .map(ReadingRecordResponse::from);
     }
     // 월 전체 기록 보기
     @Transactional(readOnly = true)
@@ -92,6 +92,6 @@ public class ReadingCalendarService {
         LocalDateTime start = ym.atDay(1).atStartOfDay();
         LocalDateTime end   = ym.plusMonths(1).atDay(1).atStartOfDay();
         return repo.findRecordsInRange(userId, start, end, q, pageable)
-                   .map(ReadingRecordResponse::new);
+                   .map(ReadingRecordResponse::from);
     }
 }
