@@ -1,6 +1,9 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -9,6 +12,8 @@ import java.time.LocalDateTime;
 @Table(name = "refresh_tokens",
     uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "device_info"})
 )
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,9 +36,6 @@ public class RefreshToken {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now(); // 만들어진 날짜시간
 
-    // 생성자
-    public RefreshToken() {}
-
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -45,23 +47,4 @@ public class RefreshToken {
         this.deviceInfo = deviceInfo;
         this.expiryDate = expiryDate;
     }
-
-    // Getter/Setter
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-
-    public String getToken() { return token; }
-    public void setToken(String token) { this.token = token; }
-
-    public String getDeviceInfo() { return deviceInfo; }
-    public void setDeviceInfo(String deviceInfo) { this.deviceInfo = deviceInfo; }
-
-    public LocalDateTime getExpiryDate() { return expiryDate; }
-    public void setExpiryDate(LocalDateTime expiryDate) { this.expiryDate = expiryDate; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

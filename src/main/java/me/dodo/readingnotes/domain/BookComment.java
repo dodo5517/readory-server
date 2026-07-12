@@ -1,6 +1,10 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -9,6 +13,8 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(name = "uq_book_comment_user_book", columnNames = {"user_id", "book_id"})
         }
 )
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BookComment {
 
     @Id
@@ -33,7 +39,17 @@ public class BookComment {
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    public BookComment() {}
+    public static BookComment create(User user, Book book, String content) {
+        BookComment comment = new BookComment();
+        comment.user = user;
+        comment.book = book;
+        comment.content = content;
+        return comment;
+    }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
 
     @PrePersist
     public void prePersist() {
@@ -41,15 +57,8 @@ public class BookComment {
         if (updatedAt == null) updatedAt = LocalDateTime.now();
     }
 
-    // Getter / Setter
-    public Long getId() { return id; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    public Book getBook() { return book; }
-    public void setBook(Book book) { this.book = book; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

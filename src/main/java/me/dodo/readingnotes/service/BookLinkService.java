@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -44,9 +43,7 @@ public class BookLinkService {
         // 기록 연결
         ReadingRecord rec = recordRepo.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
-        rec.setBook(book); // 기록 엔티티에 책 정보 저장
-        rec.setMatchStatus(ReadingRecord.MatchStatus.RESOLVED_MANUAL); // 책 수동 매칭 완료
-        rec.setMatchedAt(LocalDateTime.now()); // 매칭된 시간 저장
+        rec.matchBook(book, ReadingRecord.MatchStatus.RESOLVED_MANUAL); // 책 수동 매칭 완료
     }
 
     // 책 자동 매칭
@@ -61,15 +58,18 @@ public class BookLinkService {
         // 기록 연결 + 상태 자동
         ReadingRecord rec = recordRepo.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
-        rec.setBook(book); // 기록 엔티티에 책 정보 저장
-        rec.setMatchStatus(ReadingRecord.MatchStatus.RESOLVED_AUTO); // 책 자동 매칭 완료
-        rec.setMatchedAt(LocalDateTime.now()); // 매칭된 시간 저장
+        rec.matchBook(book, ReadingRecord.MatchStatus.RESOLVED_AUTO); // 책 자동 매칭 완료
     }
 
     // Book 엔티티에 upsert
     private Book upsertBook(LinkBookRequest r) {
         if (r.getIsbn13() != null && !r.getIsbn13().isBlank()) {
             return bookRepo.findByIsbn13(r.getIsbn13())
+                    .map(existing -> {
+                        existing.updateFrom(r.getTitle(), r.getAuthor(), r.getPublisher(),
+                                r.getIsbn10(), r.getIsbn13(), r.getCoverUrl(), parseFlexible(r.getPublishedDate()));
+                        return existing;
+                    })
                     .orElseGet(() -> bookRepo.save(toBook(r)));
         }
         // ISBN13이 없으면(기존 값이 없으면) 제목/저자 기준 신규 생성(나중에 중복 가능성 해결해야함)
@@ -78,15 +78,8 @@ public class BookLinkService {
 
     // 찾아온 책 정보 책 엔티티로 옮김
     private Book toBook(LinkBookRequest r) {
-        Book b = new Book();
-        b.setTitle(r.getTitle());
-        b.setAuthor(r.getAuthor());
-        b.setPublisher(r.getPublisher());
-        b.setIsbn10(r.getIsbn10());
-        b.setIsbn13(r.getIsbn13());
-        b.setCoverUrl(r.getCoverUrl());
-        // 날짜 파싱해서 저장
-        b.setPublishedDate(parseFlexible(r.getPublishedDate()));
+        Book b = Book.createFrom(r.getTitle(), r.getAuthor(), r.getPublisher(),
+                r.getIsbn10(), r.getIsbn13(), r.getCoverUrl(), parseFlexible(r.getPublishedDate()));
 
         log.debug("book: {}", b.toString());
         return b;
@@ -98,18 +91,16 @@ public class BookLinkService {
         if (r.getSource() == "LOCAL") return; // LOCAL은 pass
         // 기존 값 없으면 새로 생성
         BookSourceLink link = linkRepo.findBySourceAndExternalId(r.getSource(), r.getExternalId())
-                .orElseGet(BookSourceLink::new);
-        link.setBook(book);
-        link.setSource(r.getSource());
-        link.setExternalId(r.getExternalId());
-        link.setIsbn10(r.getIsbn10());
-        link.setIsbn13(r.getIsbn13());
+                .map(existing -> {
+                    existing.relinkBook(book, r.getIsbn10(), r.getIsbn13());
+                    return existing;
+                })
+                .orElseGet(() -> BookSourceLink.create(book, r.getSource(), r.getExternalId(), r.getIsbn10(), r.getIsbn13()));
         // 자동 매칭이라면 점수/원문 스냅샷을 남겨 추적 가능하게 함
         if (metaJson != null && !metaJson.isBlank()) {
             // 기존 수동 흐름과 충돌하지 않게 누적 또는 덮어쓰기 전략 택1
-            link.setMetaJson(metaJson);
+            link.attachMetaJson(metaJson);
         }
-        link.setCreatedAt(java.time.LocalDateTime.now());
         linkRepo.save(link);
     }
     // 수동 매칭 시 사용
@@ -122,9 +113,7 @@ public class BookLinkService {
     public void removeBookMatch(Long recordId) {
         ReadingRecord rec = recordRepo.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
-        rec.setBook(null);
-        rec.setMatchStatus(ReadingRecord.MatchStatus.PENDING); // 비매칭으로 상태 변경
-        rec.setMatchedAt(LocalDateTime.now()); // 매칭상태 변경된 시간 저장
+        rec.unmatchBook(); // 비매칭으로 상태 변경
     }
     
     // 날짜 파싱

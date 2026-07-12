@@ -38,27 +38,24 @@ public class UserService {
 
     // 유저 회원가입
     @Transactional // 트랜젝션 처리
-    public User registerUser(User user) {
-        if (userRepository.existsByEmail(user.getEmail())){
+    public User registerUser(String email, String username, String rawPassword) {
+        if (userRepository.existsByEmail(email)){
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
-        if (userRepository.existsByUsername(user.getUsername())) {
+        if (userRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("이미 사용 중인 이름입니다.");
         }
 
         // 비밀번호 암호화(해싱)
-        String encodedPw = passwordEncoder.encode(user.getPassword());
-        user.setPassword(encodedPw);
-
-        // provider 일반 로그인으로 저장
-        user.setProvider("local");
+        String encodedPw = passwordEncoder.encode(rawPassword);
 
         // api_key
-        user.setApiKey(ApiKeyGenerator.generate()); // api_key 생성
-        if (user.getApiKey() == null){
+        String apiKey = ApiKeyGenerator.generate(); // api_key 생성
+        if (apiKey == null){
             log.warn("api_key가 null임.");
         }
 
+        User user = User.createLocal(email, username, encodedPw, apiKey);
         return userRepository.save(user);
     }
 
@@ -69,7 +66,7 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
         String newApiKey = ApiKeyGenerator.generate(); // 랜덤 키 생성 로직
-        user.setApiKey(newApiKey); // apiKey 갱신
+        user.reissueApiKey(newApiKey); // apiKey 갱신
         userRepository.save(user);
 
         return maskApiKey(newApiKey); // 마스킹된 키 반환
@@ -96,7 +93,7 @@ public class UserService {
     public void updateProfileImage(Long id, String imageUrl) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
-        user.setProfileImageUrl(imageUrl);
+        user.changeProfileImage(imageUrl);
         userRepository.save(user);
     }
 
@@ -121,7 +118,7 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
         String oldImageUrl = user.getProfileImageUrl();
-        user.setProfileImageUrl(newImageUrl);
+        user.changeProfileImage(newImageUrl);
         userRepository.save(user);
 
         if (oldImageUrl != null) {
@@ -149,7 +146,7 @@ public class UserService {
 
         log.debug("newUsername: {}", newUsername);
 
-        user.setUsername(newUsername);
+        user.changeUsername(newUsername);
         userRepository.save(user);
     }
 
@@ -166,7 +163,7 @@ public class UserService {
         }
 
         // 새로운 비밀번호 해싱 후 저장
-        user.setPassword(passwordEncoder.encode(newPassword));
+        user.changePassword(passwordEncoder.encode(newPassword));
         userRepository.save(user); // DB에 저장
         refreshTokenRepository.deleteAllByUserId(userId);
     }
@@ -182,7 +179,7 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
         // 새로운 비밀번호 해싱 후 저장
-        user.setPassword(passwordEncoder.encode(newPassword));
+        user.changePassword(passwordEncoder.encode(newPassword));
         userRepository.save(user); // DB에 저장
         refreshTokenRepository.deleteAllByUserId(userId);
     }
@@ -194,9 +191,9 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
         // 새로운 무작위 비밀번호 해싱 후 저장
         String newPassword = ApiKeyGenerator.generate();
-        user.setPassword(passwordEncoder.encode(newPassword));
+        user.changePassword(passwordEncoder.encode(newPassword));
         // api_key 재발급
-        user.setApiKey(ApiKeyGenerator.generate());
+        user.reissueApiKey(ApiKeyGenerator.generate());
         userRepository.save(user);
         refreshTokenRepository.deleteAllByUserId(userId);
 
@@ -243,7 +240,7 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 ID의 유저가 없습니다."));
 
-        user.setUserStatus(status);
+        user.changeStatus(status);
         userRepository.save(user);
         if (status == User.UserStatus.BLOCKED) {
             refreshTokenRepository.deleteAllByUserId(userId);
@@ -262,10 +259,10 @@ public class UserService {
 
         switch (role) {
             case "ADMIN":
-                user.setRole("ADMIN");
+                user.changeRole("ADMIN");
                 break;
             case "USER":
-                user.setRole("USER");
+                user.changeRole("USER");
                 break;
             default:
                 throw new IllegalArgumentException("존재하지 않는 role입니다.");

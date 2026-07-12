@@ -1,6 +1,10 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -9,6 +13,8 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(name = "uq_user_book_pin", columnNames = {"user_id", "book_id"})
         }
 )
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserBookPin {
 
     @Id
@@ -27,8 +33,6 @@ public class UserBookPin {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public UserBookPin() {}
-
     public UserBookPin(User user, Book book) {
         this.user = user;
         this.book = book;
@@ -38,9 +42,4 @@ public class UserBookPin {
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
-
-    public Long getId() { return id; }
-    public User getUser() { return user; }
-    public Book getBook() { return book; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
 }

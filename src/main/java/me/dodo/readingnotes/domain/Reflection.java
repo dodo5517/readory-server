@@ -1,6 +1,10 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 /**
@@ -14,6 +18,8 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(name = "uq_reflection_user_book", columnNames = {"user_id", "book_id"})
         }
 )
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Reflection {
 
     @Id
@@ -41,7 +47,22 @@ public class Reflection {
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    public Reflection() {}
+    public static Reflection create(User user, Book book, String title, String content) {
+        Reflection reflection = new Reflection();
+        reflection.user = user;
+        reflection.book = book;
+        reflection.title = title;
+        reflection.content = content;
+        return reflection;
+    }
+
+    public void updateTitle(String title) {
+        this.title = title;
+    }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
 
     @PrePersist
     public void prePersist() {
@@ -53,17 +74,4 @@ public class Reflection {
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
-    public Long getId() { return id; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-    public Book getBook() { return book; }
-    public void setBook(Book book) { this.book = book; }
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

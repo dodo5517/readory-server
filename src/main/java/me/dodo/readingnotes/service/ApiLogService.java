@@ -25,25 +25,21 @@ public class ApiLogService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void save(ApiLogCommand cmd) {
         try {
-            ApiLog entity = new ApiLog();
-
             // user: 실패/비로그인/파싱 실패 등은 null
-            entity.setUser(resolveUserOrNull(cmd.getUserId()));
-
-            entity.setUserRole(safe(cmd.getUserRole(), 100));     // 엔티티 length=100
-            entity.setMethod(safe(cmd.getMethod(), 100));
-            entity.setPath(safe(cmd.getPath(), 255));
-            entity.setQueryString(safe(cmd.getQueryString(), 255));
-
-            entity.setStatusCode(cmd.getStatusCode());            // int라 length 무의미하지만 그대로 세팅
-            entity.setResult(cmd.getResult() == null ? ApiLog.Result.FAIL : cmd.getResult());
-
-            entity.setIpAddress(safe(cmd.getIpAddress(), 45));
-            entity.setUserAgent(safe(cmd.getUserAgent(), 255));
-            entity.setExecutionTimeMs(cmd.getExecutionTimeMs());
-
-            entity.setErrorCode(safe(cmd.getErrorCode(), 20));
-            entity.setErrorMessage(safe(cmd.getErrorMessage(), 100));
+            ApiLog entity = ApiLog.create(
+                    resolveUserOrNull(cmd.getUserId()),
+                    safe(cmd.getUserRole(), 100),     // 엔티티 length=100
+                    safe(cmd.getMethod(), 100),
+                    safe(cmd.getPath(), 255),
+                    safe(cmd.getQueryString(), 255),
+                    cmd.getStatusCode(),               // int라 length 무의미하지만 그대로 세팅
+                    cmd.getResult() == null ? ApiLog.Result.FAIL : cmd.getResult(),
+                    safe(cmd.getIpAddress(), 45),
+                    safe(cmd.getUserAgent(), 255),
+                    cmd.getExecutionTimeMs(),
+                    safe(cmd.getErrorCode(), 20),
+                    safe(cmd.getErrorMessage(), 100)
+            );
 
             apiLogRepository.save(entity);
 

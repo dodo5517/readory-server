@@ -1,6 +1,9 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -8,6 +11,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "api_logs")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ApiLog {
 
     @Id
@@ -55,54 +60,29 @@ public class ApiLog {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    public enum Result { SUCCESS, FAIL }
+
+    public static ApiLog create(User user, String userRole, String method, String path, String queryString,
+                                 int statusCode, Result result, String ipAddress, String userAgent,
+                                 int executionTimeMs, String errorCode, String errorMessage) {
+        ApiLog log = new ApiLog();
+        log.user = user;
+        log.userRole = userRole;
+        log.method = method;
+        log.path = path;
+        log.queryString = queryString;
+        log.statusCode = statusCode;
+        log.result = result;
+        log.ipAddress = ipAddress;
+        log.userAgent = userAgent;
+        log.executionTimeMs = executionTimeMs;
+        log.errorCode = errorCode;
+        log.errorMessage = errorMessage;
+        return log;
+    }
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
-
-    public enum Result { SUCCESS, FAIL }
-
-    public ApiLog() {}
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-
-    public String getUserRole() { return userRole; }
-    public void setUserRole(String userRole) { this.userRole = userRole; }
-
-    public String getMethod() { return method; }
-    public void setMethod(String method) { this.method = method; }
-
-    public String getPath() { return path; }
-    public void setPath(String path) { this.path = path; }
-
-    public String getQueryString() { return queryString; }
-    public void setQueryString(String queryString) { this.queryString = queryString; }
-
-    public int getStatusCode() { return statusCode; }
-    public void setStatusCode(int statusCode) { this.statusCode = statusCode; }
-
-    public ApiLog.Result getResult() { return result; }
-    public void setResult(ApiLog.Result result) { this.result = result; }
-
-    public String getIpAddress() { return ipAddress; }
-    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
-
-    public String getUserAgent() { return userAgent; }
-    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
-
-    public int getExecutionTimeMs() { return executionTimeMs; }
-    public void setExecutionTimeMs(int executionTimeMs) { this.executionTimeMs = executionTimeMs; }
-
-    public String getErrorCode() { return errorCode; }
-    public void setErrorCode(String errorCode) { this.errorCode = errorCode; }
-
-    public String getErrorMessage() { return errorMessage; }
-    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -11,7 +11,6 @@ import me.dodo.readingnotes.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -51,8 +50,7 @@ public class BookCommentService {
         if (existing.isPresent()) {
             // 수정
             comment = existing.get();
-            comment.setContent(content.trim());
-            comment.setUpdatedAt(LocalDateTime.now());
+            comment.updateContent(content.trim());
         } else {
             // 신규 생성
             User user = userRepository.findById(userId)
@@ -60,10 +58,7 @@ public class BookCommentService {
             Book book = bookRepository.findById(bookId)
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 책"));
 
-            comment = new BookComment();
-            comment.setUser(user);
-            comment.setBook(book);
-            comment.setContent(content.trim());
+            comment = BookComment.create(user, book, content.trim());
         }
 
         return new BookCommentResponse(bookCommentRepository.save(comment));

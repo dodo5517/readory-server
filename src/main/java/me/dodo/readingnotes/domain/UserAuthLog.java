@@ -1,6 +1,9 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -8,6 +11,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_auth_logs")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserAuthLog {
 
     @Id @GeneratedValue
@@ -46,39 +51,23 @@ public class UserAuthLog {
     public enum AuthEventType { LOGIN, LOGIN_FAIL, LOGOUT_CURRENT_DEVICE, LOGOUT_ALL_DEVICES }
     public enum AuthResult { SUCCESS, FAIL }
 
+    public static UserAuthLog create(User user, String identifier, String provider,
+                                      AuthEventType eventType, AuthResult result, String failReason,
+                                      String ipAddress, String userAgent) {
+        UserAuthLog log = new UserAuthLog();
+        log.user = user;
+        log.identifier = identifier;
+        log.provider = provider;
+        log.eventType = eventType;
+        log.result = result;
+        log.failReason = failReason;
+        log.ipAddress = ipAddress;
+        log.userAgent = userAgent;
+        return log;
+    }
 
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-
-    public AuthEventType getEventType() { return eventType; }
-    public void setEventType(AuthEventType eventType) { this.eventType = eventType; }
-
-    public AuthResult getResult() { return result; }
-    public void setResult(AuthResult result) { this.result = result; }
-
-    public String getFailReason() { return failReason; }
-    public void setFailReason(String failReason) { this.failReason = failReason; }
-
-    public String getIpAddress() { return ipAddress; }
-    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
-
-    public String getUserAgent() { return userAgent; }
-    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
-
-    public String getIdentifier() { return identifier; }
-    public void setIdentifier(String identifier) { this.identifier = identifier; }
-
-    public String getProvider() { return provider; }
-    public void setProvider(String provider) { this.provider = provider; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

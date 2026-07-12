@@ -1,6 +1,10 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity // 이 클래스가 JPA 엔티티임을 선언. DB 테이블과 매핑됨
@@ -10,6 +14,8 @@ import java.time.LocalDateTime;
             @Index(name = "idx_rr_user_recorded", columnList = "user_id, recorded_at"),
             @Index(name = "idx_record_user_book_at_id", columnList = "user_id, book_id, recorded_at, id")
     })
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReadingRecord {
 
     @Id //이 필드(id)가 기본 키임을 나타냄
@@ -64,8 +70,40 @@ public class ReadingRecord {
 
     public enum MatchStatus { PENDING, RESOLVED_AUTO, RESOLVED_MANUAL, NO_CANDIDATE, MULTIPLE_CANDIDATES }
 
-    // 기본 생성자 (JPA 필수)
-    public ReadingRecord() {
+    public static ReadingRecord create(User user, String sentence, String sentenceOriginal, String comment,
+                                        String rawTitle, String rawAuthor, LocalDateTime recordedAt) {
+        ReadingRecord record = new ReadingRecord();
+        record.user = user;
+        record.sentence = sentence;
+        record.sentenceOriginal = sentenceOriginal;
+        record.comment = comment;
+        record.rawTitle = rawTitle;
+        record.rawAuthor = rawAuthor;
+        record.recordedAt = recordedAt != null ? recordedAt : LocalDateTime.now();
+        return record;
+    }
+
+    // 책 매칭(수동/자동)
+    public void matchBook(Book book, MatchStatus status) {
+        this.book = book;
+        this.matchStatus = status;
+        this.matchedAt = LocalDateTime.now();
+    }
+
+    // 책 매칭 해제
+    public void unmatchBook() {
+        this.book = null;
+        this.matchStatus = MatchStatus.PENDING;
+        this.matchedAt = LocalDateTime.now();
+    }
+
+    // null이 아닌 필드만 반영
+    public void updateContent(String rawTitle, String rawAuthor, String sentence, String comment, LocalDateTime recordedAt) {
+        if (rawTitle != null) this.rawTitle = rawTitle;
+        if (rawAuthor != null) this.rawAuthor = rawAuthor;
+        if (sentence != null) this.sentence = sentence;
+        if (comment != null) this.comment = comment;
+        if (recordedAt != null) this.recordedAt = recordedAt;
     }
 
     // entity가 db에 insert 되기 전에 호출됨.
@@ -75,6 +113,11 @@ public class ReadingRecord {
         if (recordedAt == null) recordedAt = LocalDateTime.now();
         if (updatedAt == null) updatedAt = LocalDateTime.now();
         if (matchStatus == null) matchStatus = MatchStatus.PENDING;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     @Override
@@ -89,52 +132,4 @@ public class ReadingRecord {
                 ", createdAt=" + createdAt +
                 '}';
     }
-
-    // Getter / Setter
-    public Long getId() {
-        return id;
-    }
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Book getBook() {
-        return book;
-    }
-    public void setBook(Book book) {
-        this.book = book;
-    }
-
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
-
-    public String getSentence() {return sentence;}
-    public void setSentence(String sentence) { this.sentence = sentence; }
-    public String getSentenceOriginal() { return sentenceOriginal; }
-    public void setSentenceOriginal(String sentenceOriginal) { this.sentenceOriginal = sentenceOriginal; }
-
-
-    public String getComment() { return comment; }
-    public void setComment(String comment) { this.comment = comment; }
-
-    public String getRawTitle() { return rawTitle; }
-    public void setRawTitle(String rawTitle) { this.rawTitle = rawTitle; }
-
-    public String getRawAuthor() { return rawAuthor; }
-    public void setRawAuthor(String rawAuthor) { this.rawAuthor = rawAuthor; }
-
-    public MatchStatus getMatchStatus() { return matchStatus; }
-    public void setMatchStatus(MatchStatus matchStatus) { this.matchStatus = matchStatus; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public LocalDateTime getRecordedAt() { return recordedAt; }
-    public void setRecordedAt(LocalDateTime recordedAt) { this.recordedAt = recordedAt; }
-
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-
-    public LocalDateTime getMatchedAt() { return matchedAt; }
-    public void setMatchedAt(LocalDateTime matchedAt) { this.matchedAt = matchedAt; }
 }

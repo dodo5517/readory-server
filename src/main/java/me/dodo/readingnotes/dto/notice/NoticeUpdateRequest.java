@@ -1,13 +1,13 @@
 package me.dodo.readingnotes.dto.notice;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
 public class NoticeUpdateRequest {
     private String message;
     private Boolean enabled;
-
-    public NoticeUpdateRequest() {}
-
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-    public Boolean getEnabled() { return enabled; }
-    public void setEnabled(Boolean enabled) { this.enabled = enabled; }
 }

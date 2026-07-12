@@ -1,10 +1,16 @@
 package me.dodo.readingnotes.domain;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notices")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notice {
 
     @Id
@@ -23,15 +29,29 @@ public class Notice {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    public Notice() {}
+    public static Notice create(String message, boolean enabled) {
+        Notice notice = new Notice();
+        notice.message = message;
+        notice.enabled = enabled;
+        return notice;
+    }
 
-    public Long getId() { return id; }
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-    public boolean isEnabled() { return enabled; }
-    public void setEnabled(boolean enabled) { this.enabled = enabled; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void updateMessage(String message) {
+        this.message = message;
+    }
+
+    public void changeEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
