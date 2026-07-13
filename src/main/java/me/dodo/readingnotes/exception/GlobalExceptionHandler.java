@@ -38,8 +38,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleEntityNotFound(EntityNotFoundException ex) {
+        // 상세 메시지(조회 키 id 등)는 서버 로그로만 남기고, 클라이언트에는 일반 메시지만 전달
+        log.warn("리소스 조회 실패: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error("NOT_FOUND", ex.getMessage()));
+                .body(ApiResponse.error("NOT_FOUND", "요청하신 정보를 찾을 수 없습니다."));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
