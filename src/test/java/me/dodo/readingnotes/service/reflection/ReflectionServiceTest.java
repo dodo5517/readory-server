@@ -1,6 +1,7 @@
 package me.dodo.readingnotes.service.reflection;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.BookComment;
 import me.dodo.readingnotes.domain.ReadingRecord;
@@ -163,7 +164,7 @@ class ReflectionServiceTest {
         when(bookRepo.findById(BOOK_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.clusterOnly(USER_ID, BOOK_ID))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("책");
 
         verify(llmClient, never()).complete(any(), any(), anyInt(), any());

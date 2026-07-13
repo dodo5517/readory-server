@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service.reflection;
 
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.Reflection;
 import me.dodo.readingnotes.domain.User;
@@ -38,9 +39,9 @@ public class ReflectionStorageService {
         Reflection r = reflectionRepo.findByUser_IdAndBook_Id(userId, req.bookId())
                 .orElseGet(() -> {
                     Book book = bookRepo.findById(req.bookId())
-                            .orElseThrow(() -> new IllegalArgumentException("책을 찾을 수 없습니다."));
+                            .orElseThrow(() -> new EntityNotFoundException("책을 찾을 수 없습니다. bookId=" + req.bookId()));
                     User user = userRepo.findById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                            .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다. userId=" + userId));
                     return Reflection.create(user, book, "", "");
                 });
         r.updateTitle(req.title() != null ? req.title() : "");

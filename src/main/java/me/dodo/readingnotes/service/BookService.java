@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.dto.admin.AdminBookStatsResponse;
 import me.dodo.readingnotes.dto.admin.BookDetailResponse;
@@ -51,7 +52,7 @@ public class BookService {
     // 관리자용 책 상세 조회
     public BookDetailResponse findBookById(Long id) {
         Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 책을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new EntityNotFoundException("해당 책을 찾을 수 없습니다. id=" + id));
         return BookDetailResponse.from(book);
     }
 
@@ -59,7 +60,7 @@ public class BookService {
     @Transactional
     public void softDeleteBook(Long id) {
         Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 책을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new EntityNotFoundException("해당 책을 찾을 수 없습니다. id=" + id));
 
         if (book.getDeletedAt() != null) {
             throw new IllegalStateException("이미 삭제된 책입니다. id=" + id);
@@ -72,7 +73,7 @@ public class BookService {
     @Transactional
     public void hardDeleteBook(Long id) {
         if (!bookRepository.existsById(id)) {
-            throw new IllegalArgumentException("해당 책을 찾을 수 없습니다. id=" + id);
+            throw new EntityNotFoundException("해당 책을 찾을 수 없습니다. id=" + id);
         }
         readingRecordRepository.detachBook(id);
         bookSourceLinkRepository.deleteAllByBookId(id);
@@ -85,7 +86,7 @@ public class BookService {
     @Transactional
     public void restoreBook(Long id) {
         Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 책을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new EntityNotFoundException("해당 책을 찾을 수 없습니다. id=" + id));
 
         if (book.getDeletedAt() == null) {
             throw new IllegalStateException("삭제되지 않은 책입니다. id=" + id);

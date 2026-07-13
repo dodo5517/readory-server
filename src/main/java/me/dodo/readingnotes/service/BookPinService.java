@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.domain.UserBookPin;
@@ -30,9 +31,9 @@ public class BookPinService {
         if (pinRepository.existsByUser_IdAndBook_Id(userId, bookId)) return;
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 책입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 책입니다. bookId=" + bookId));
 
         pinRepository.save(new UserBookPin(user, book));
     }

@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.BookSourceLink;
 import me.dodo.readingnotes.domain.ReadingRecord;
@@ -42,7 +43,7 @@ public class BookLinkService {
 
         // 기록 연결
         ReadingRecord rec = recordRepo.findById(recordId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("유효하지 않은 recordId 입니다. recordId=" + recordId));
         rec.matchBook(book, ReadingRecord.MatchStatus.RESOLVED_MANUAL); // 책 수동 매칭 완료
     }
 
@@ -57,7 +58,7 @@ public class BookLinkService {
 
         // 기록 연결 + 상태 자동
         ReadingRecord rec = recordRepo.findById(recordId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("유효하지 않은 recordId 입니다. recordId=" + recordId));
         rec.matchBook(book, ReadingRecord.MatchStatus.RESOLVED_AUTO); // 책 자동 매칭 완료
     }
 
@@ -112,7 +113,7 @@ public class BookLinkService {
     @Transactional
     public void removeBookMatch(Long recordId) {
         ReadingRecord rec = recordRepo.findById(recordId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("유효하지 않은 recordId 입니다. recordId=" + recordId));
         rec.unmatchBook(); // 비매칭으로 상태 변경
     }
     
@@ -137,7 +138,7 @@ public class BookLinkService {
     // 본인 기록에 대한 요청인지 확인
     public void assertSelf(Long targetRecordId, Long tokenUserId) {
         ReadingRecord rec = recordRepo.findById(targetRecordId)
-                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 recordId 입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("유효하지 않은 recordId 입니다. recordId=" + targetRecordId));
         if (tokenUserId == null || targetRecordId == null) {
             throw new IllegalArgumentException("ID가 없습니다.");
         }

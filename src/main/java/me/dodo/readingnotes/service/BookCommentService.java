@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.BookComment;
 import me.dodo.readingnotes.domain.User;
@@ -54,9 +55,9 @@ public class BookCommentService {
         } else {
             // 신규 생성
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
+                    .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 사용자. userId=" + userId));
             Book book = bookRepository.findById(bookId)
-                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 책"));
+                    .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 책. bookId=" + bookId));
 
             comment = BookComment.create(user, book, content.trim());
         }
@@ -68,7 +69,7 @@ public class BookCommentService {
     @Transactional
     public void deleteComment(Long userId, Long bookId) {
         BookComment comment = bookCommentRepository.findByUser_IdAndBook_Id(userId, bookId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 코멘트가 존재하지 않습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("해당 코멘트가 존재하지 않습니다. userId=" + userId + ", bookId=" + bookId));
         bookCommentRepository.delete(comment);
     }
 }
