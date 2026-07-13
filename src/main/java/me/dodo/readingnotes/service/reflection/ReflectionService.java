@@ -3,6 +3,7 @@ package me.dodo.readingnotes.service.reflection;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.BookComment;
 import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.external.llm.LlmClient;
@@ -55,7 +56,7 @@ public class ReflectionService {
     // ── 1단계: 묶기 + 개요만 (동기, SSE 아님) ────────────────────────
     public me.dodo.readingnotes.dto.reflection.ClusterResult clusterOnly(Long userId, Long bookId) {
         var book = bookRepo.findById(bookId)
-                .orElseThrow(() -> new IllegalArgumentException("책을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("책을 찾을 수 없습니다. bookId=" + bookId));
         List<ReadingRecord> records = recordRepo.findAllWithCommentByUserAndBook(userId, bookId);
         if (records.isEmpty()) {
             throw new IllegalArgumentException("감상이 있는 기록이 없습니다. 먼저 기록에 감상을 남겨 주세요.");
@@ -118,7 +119,7 @@ public class ReflectionService {
 
     private void composeSections(Long userId, me.dodo.readingnotes.dto.reflection.ComposeRequest req, SseEmitter emitter) {
         var book = bookRepo.findById(req.bookId())
-                .orElseThrow(() -> new IllegalArgumentException("책을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("책을 찾을 수 없습니다. bookId=" + req.bookId()));
         // indices 매칭을 위해 묶기 때와 동일 순서로 다시 조회
         List<ReadingRecord> records = recordRepo.findAllWithCommentByUserAndBook(userId, req.bookId());
 
