@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import me.dodo.readingnotes.domain.RefreshToken;
 import me.dodo.readingnotes.domain.User;
@@ -100,7 +101,7 @@ public class AuthService {
     @Transactional
     public void logoutUser(Long userId, String userAgent) {
         User user = userRepository.findById(userId).
-            orElseThrow(()->new IllegalArgumentException("존재하지 않는 유저입니다."));
+            orElseThrow(()->new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
 
         // 디바이스 정보 파싱
         String deviceInfo = DeviceInfoParser.extractDeviceInfo(userAgent);
@@ -122,7 +123,7 @@ public class AuthService {
     @Transactional
     public void logoutAllDevices(Long userId) {
         User user = userRepository.findById(userId).
-                orElseThrow(()->new IllegalArgumentException("존재하지 않는 유저입니다."));
+                orElseThrow(()->new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
 
         // 해당 유저의 모든 디바이스의 RefreshToken 삭제
         refreshTokenRepository.deleteAllByUserId(userId);
