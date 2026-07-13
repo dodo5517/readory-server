@@ -1,6 +1,7 @@
 package me.dodo.readingnotes.service;
 
 // jakarta.transaction.Transactional 보다 밑에가 spring framework 전용으로 연동 잘 됨.
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.dto.admin.AdminPageUserResponse;
 import me.dodo.readingnotes.exception.PasswordMismatchException;
 import me.dodo.readingnotes.repository.RefreshTokenRepository;
@@ -63,7 +64,7 @@ public class UserService {
     @Transactional
     public String reissueApiKey(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
 
         String newApiKey = ApiKeyGenerator.generate(); // 랜덤 키 생성 로직
         user.reissueApiKey(newApiKey); // apiKey 갱신
@@ -83,7 +84,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public String getRawApiKey(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
 
         return user.getApiKey();
     }
@@ -92,7 +93,7 @@ public class UserService {
     @Transactional
     public void updateProfileImage(Long id, String imageUrl) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + id));
         user.changeProfileImage(imageUrl);
         userRepository.save(user);
     }
@@ -101,7 +102,7 @@ public class UserService {
     @Transactional
     public void deleteProfileImage(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
 
         if (user.getProfileImageUrl() != null){
             String fileName = extractKeyFromUrl(user.getProfileImageUrl());
@@ -115,7 +116,7 @@ public class UserService {
     @Transactional
     public void replaceProfileImage(Long userId, String newImageUrl) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
 
         String oldImageUrl = user.getProfileImageUrl();
         user.changeProfileImage(newImageUrl);
@@ -138,7 +139,7 @@ public class UserService {
     @Transactional
     public void updateUsername(Long userId, String newUsername) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
 
         if (!user.getUsername().equals(newUsername) && userRepository.existsByUsername(newUsername)) {
             throw new IllegalArgumentException("이미 사용 중인 이름입니다.");
@@ -155,7 +156,7 @@ public class UserService {
     public void updatePassword(Long userId, String currentPassword, String newPassword) {
         // 유저 존재 확인
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
 
         // 기존 비밀번호 비교
         if (!passwordEncoder.matches(currentPassword, user.getPassword())){ // 평문 비교가 아니라 해시 비교
@@ -176,7 +177,7 @@ public class UserService {
         }
         // 유저 존재 확인
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
 
         // 새로운 비밀번호 해싱 후 저장
         user.changePassword(passwordEncoder.encode(newPassword));
@@ -188,7 +189,7 @@ public class UserService {
     @Transactional
     public String reset(Long userId){
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 유저입니다. userId=" + userId));
         // 새로운 무작위 비밀번호 해싱 후 저장
         String newPassword = ApiKeyGenerator.generate();
         user.changePassword(passwordEncoder.encode(newPassword));
@@ -215,13 +216,13 @@ public class UserService {
     // ID로 유저 조회
     public User findUserById(Long id) {
         return userRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("해당 ID의 유저가 없습니다."));
+            .orElseThrow(() -> new EntityNotFoundException("해당 ID의 유저가 없습니다. userId=" + id));
     }
 
     // 유저 삭제
     public boolean deleteUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(()-> new IllegalArgumentException("해당 ID의 유저가 없습니다."));
+                .orElseThrow(()-> new EntityNotFoundException("해당 ID의 유저가 없습니다. userId=" + id));
         // 삭제
         userRepository.delete(user);
 
@@ -238,7 +239,7 @@ public class UserService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 유저가 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("해당 ID의 유저가 없습니다. userId=" + userId));
 
         user.changeStatus(status);
         userRepository.save(user);
@@ -255,7 +256,7 @@ public class UserService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 유저가 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("해당 ID의 유저가 없습니다. userId=" + userId));
 
         switch (role) {
             case "ADMIN":
