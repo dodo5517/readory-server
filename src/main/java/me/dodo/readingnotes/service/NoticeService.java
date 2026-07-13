@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.Notice;
 import me.dodo.readingnotes.dto.notice.NoticeResponse;
 import me.dodo.readingnotes.dto.notice.NoticeUpdateRequest;
@@ -49,7 +50,7 @@ public class NoticeService {
     @Transactional
     public NoticeResponse updateNotice(Long id, NoticeUpdateRequest request) {
         Notice notice = noticeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("공지를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("공지를 찾을 수 없습니다. noticeId=" + id));
         if (request.getMessage() != null) notice.updateMessage(request.getMessage());
         if (request.getEnabled() != null) notice.changeEnabled(request.getEnabled());
         return NoticeResponse.from(noticeRepository.save(notice));
