@@ -70,7 +70,7 @@ public class ReadingRecordService {
         User user = userFromFilter != null
                 ? userFromFilter
                 : userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 사용자. userId=" + userId));
 
         String rawSentence = req.getSentence();
         String cleanedSentence = EbookSourceCleaner.clean(rawSentence);
@@ -128,7 +128,7 @@ public class ReadingRecordService {
     public BookRecordsPageResponse getBookRecordsByCursor(Long userId, Long bookId, String cursor, int size) {
         // 책 찾기
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 책입니다."));
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 책입니다. bookId=" + bookId));
 
         // size 정규화
         int pageSize = normalizeSize(size);
@@ -239,7 +239,7 @@ public class ReadingRecordService {
         Optional<ReadingRecord> recordOpt = readingRecordRepository.findByIdAndUserId(recordId, userId);
         if (recordOpt.isEmpty()) {
             log.info("해당 유저의 해당 기록이 없습니다: {} 의 {}", userId, recordId);
-            throw new EntityNotFoundException("해당 기록을 찾을 수 없습니다.");
+            throw new EntityNotFoundException("해당 기록을 찾을 수 없습니다. recordId=" + recordId);
         }
         // 기존 기록
         ReadingRecord record = recordOpt.get();
@@ -273,7 +273,7 @@ public class ReadingRecordService {
     public void deleteRecordById(Long recordId, Long userId) {
         // 삭제하려는 행의 존재 여부 확인
         ReadingRecord record = readingRecordRepository.findByIdAndUserId(recordId, userId)
-                .orElseThrow(()-> new IllegalArgumentException("해당 유저의 해당 레코드가 존재하지 않습니다: "+ userId +"의"+ recordId));
+                .orElseThrow(()-> new EntityNotFoundException("해당 유저의 해당 레코드가 존재하지 않습니다: "+ userId +"의"+ recordId));
         // 삭제
         readingRecordRepository.delete(record);
     }
@@ -284,7 +284,7 @@ public class ReadingRecordService {
         // 삭제할 기록의 존재 여부 확인
         boolean exists = readingRecordRepository.existsByBook_IdAndUser_Id(bookId, userId);
         if (!exists) {
-            throw new IllegalArgumentException("해당 유저의 해당 책 기록이 존재하지 않습니다: " + userId + "의 " + bookId);
+            throw new EntityNotFoundException("해당 유저의 해당 책 기록이 존재하지 않습니다: " + userId + "의 " + bookId);
         }
 
         // 삭제
@@ -330,7 +330,7 @@ public class ReadingRecordService {
     @Transactional(readOnly = true)
     public AdminRecordDetailResponse findRecordByIdForAdmin(Long id) {
         ReadingRecord record = readingRecordRepository.findByIdForAdmin(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 기록을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new EntityNotFoundException("해당 기록을 찾을 수 없습니다. id=" + id));
         return AdminRecordDetailResponse.from(record);
     }
 
@@ -400,7 +400,7 @@ public class ReadingRecordService {
     @Transactional
     public AdminRecordDetailResponse updateRecordForAdmin(Long id, AdminRecordUpdateRequest request) {
         ReadingRecord record = readingRecordRepository.findByIdForAdmin(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 기록을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new EntityNotFoundException("해당 기록을 찾을 수 없습니다. id=" + id));
 
         // null이 아닌 필드만 업데이트
         record.updateContent(request.getRawTitle(), request.getRawAuthor(), request.getSentence(),
@@ -424,7 +424,7 @@ public class ReadingRecordService {
     @Transactional
     public void deleteRecordForAdmin(Long id) {
         ReadingRecord record = readingRecordRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 기록을 찾을 수 없습니다. id=" + id));
+                .orElseThrow(() -> new EntityNotFoundException("해당 기록을 찾을 수 없습니다. id=" + id));
         readingRecordRepository.delete(record);
     }
 
