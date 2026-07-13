@@ -1,5 +1,6 @@
 package me.dodo.readingnotes.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import me.dodo.readingnotes.domain.ApiLog;
 import me.dodo.readingnotes.domain.UserAuthLog;
 import me.dodo.readingnotes.dto.log.ApiLogDetailResponse;
@@ -40,7 +41,7 @@ public class LogService {
     @Transactional
     public AuthLogDetailResponse findAuthLog(Long id) {
         UserAuthLog log = authLogRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 로그가 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("해당 ID의 로그가 없습니다. id=" + id));
         return AuthLogDetailResponse.from(log);
     }
 
@@ -67,7 +68,7 @@ public class LogService {
     @Transactional(readOnly = true)
     public ApiLogDetailResponse findApiLog(Long id) {
         ApiLog log = apiLogRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 로그가 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("해당 ID의 로그가 없습니다. id=" + id));
         return ApiLogDetailResponse.from(log);
     }
 
