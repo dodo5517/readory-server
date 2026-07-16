@@ -6,12 +6,14 @@ import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.dto.admin.*;
 import me.dodo.readingnotes.dto.book.*;
+import me.dodo.readingnotes.dto.reading.HighlightItem;
 import me.dodo.readingnotes.dto.reading.ReadingRecordItem;
 import me.dodo.readingnotes.dto.reading.ReadingRecordRequest;
 import me.dodo.readingnotes.dto.reading.ReadingRecordResponse;
 import me.dodo.readingnotes.repository.BookCommentRepository;
 import me.dodo.readingnotes.repository.BookRepository;
 import me.dodo.readingnotes.repository.ReadingRecordRepository;
+import me.dodo.readingnotes.repository.RecordHighlightRepository;
 import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.util.EbookSourceCleaner;
 import org.slf4j.Logger;
@@ -41,6 +43,7 @@ public class ReadingRecordService {
     private final BookMatchingAsyncService bookMatchingAsyncService;
     private final BookCommentRepository bookCommentRepository;
     private final CleanBatchService cleanBatchService;
+    private final RecordHighlightRepository recordHighlightRepository;
 
     private static final Logger log = LoggerFactory.getLogger(ReadingRecordService.class);
 
@@ -54,7 +57,8 @@ public class ReadingRecordService {
                                 BookLinkService bookLinkService,
                                 BookMatchingAsyncService bookMatchingAsyncService,
                                 BookCommentRepository bookCommentRepository,
-                                CleanBatchService cleanBatchService) {
+                                CleanBatchService cleanBatchService,
+                                RecordHighlightRepository recordHighlightRepository) {
         this.readingRecordRepository = readingRecordRepository;
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
@@ -62,6 +66,7 @@ public class ReadingRecordService {
         this.bookMatchingAsyncService = bookMatchingAsyncService;
         this.bookCommentRepository = bookCommentRepository;
         this.cleanBatchService = cleanBatchService;
+        this.recordHighlightRepository = recordHighlightRepository;
     }
 
     // 새로운 기록 생성 (User 객체를 Optional로 받아서 jwt, api 분리)
@@ -192,9 +197,19 @@ public class ReadingRecordService {
                 periodEnd
         );
 
+        // 하이라이트 배치 조회 (N+1 방지) 후 기록 id로 그룹핑
+        List<Long> recordIds = fetched.stream().map(ReadingRecord::getId).toList();
+        Map<Long, List<HighlightItem>> highlightsByRecord = recordIds.isEmpty()
+                ? Map.of()
+                : recordHighlightRepository.findByRecord_IdInOrderByRecord_IdAscStartOffsetAsc(recordIds).stream()
+                        .collect(Collectors.groupingBy(
+                                h -> h.getRecord().getId(),
+                                Collectors.mapping(HighlightItem::from, Collectors.toList())));
+
         // 기록 정보 매핑
         List<ReadingRecordItem> items = fetched.stream()
-                .map(r -> new ReadingRecordItem(r.getId(), r.getRecordedAt(), r.getSentence(), r.getComment()))
+                .map(r -> new ReadingRecordItem(r.getId(), r.getRecordedAt(), r.getSentence(), r.getComment(),
+                        highlightsByRecord.getOrDefault(r.getId(), List.of())))
                 .toList();
 
         // 책 코멘트 조회

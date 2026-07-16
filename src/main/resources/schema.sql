@@ -362,3 +362,30 @@ CREATE TABLE IF NOT EXISTS reflections (
     CONSTRAINT fk_reflection_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_reflection_book FOREIGN KEY (book_id) REFERENCES books(id)
 );
+
+-- =========================
+-- Table: record_highlights
+-- =========================
+CREATE TABLE IF NOT EXISTS record_highlights (
+    id                BIGSERIAL PRIMARY KEY,
+
+    reading_record_id BIGINT      NOT NULL,
+
+    start_offset      INTEGER     NOT NULL,   -- sentence 기준 시작(포함)
+    end_offset        INTEGER     NOT NULL,   -- sentence 기준 끝(미포함)
+    color             VARCHAR(20) NOT NULL,
+
+    created_at        TIMESTAMP   NOT NULL DEFAULT now(),
+
+    CONSTRAINT fk_rh_record
+    FOREIGN KEY (reading_record_id)
+    REFERENCES reading_records(id)
+    ON DELETE CASCADE,
+
+    CONSTRAINT ck_record_highlights_color
+    CHECK (color IN ('GREEN', 'PEACH'))
+    );
+
+-- 기록별 하이라이트 조회/배치 로딩용
+CREATE INDEX IF NOT EXISTS idx_rh_record
+    ON record_highlights (reading_record_id);
