@@ -73,6 +73,11 @@ public class Book {
         this.publishedDate = publishedDate;
     }
 
+    // 외부 API 재조회로 최신성을 확인했음을 기록 (필드 값이 그대로여도 갱신 시각을 갱신함)
+    public void markRefreshed() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void markDeleted() {
         this.deletedAt = LocalDateTime.now();
     }

@@ -37,6 +37,21 @@ public class KakaoBookClient implements BookSearchClient {
         return adapter.adapt(response);
     }
 
+    // ISBN으로 단일 도서 조회 (캐시 갱신 시 정확한 동일 도서 재조회용)
+    public List<BookCandidate> searchByIsbn(String isbn) {
+        KakaoBookAdapter.KakaoResponse response = restClient.get()
+                .uri(uri -> uri.queryParam("query", isbn)
+                        .queryParam("target", "isbn")
+                        .build())
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                    String body = new String(res.getBody().readAllBytes(), StandardCharsets.UTF_8);
+                    throw new RuntimeException("Kakao API error: " + res.getStatusCode() + " - " + body);
+                })
+                .body(KakaoBookAdapter.KakaoResponse.class);
+        return adapter.adapt(response);
+    }
+
     // 검색 쿼리 빌드
     private String buildQuery(String rawTitle, String rawAuthor) {
         return (rawAuthor == null || rawAuthor.isBlank())
