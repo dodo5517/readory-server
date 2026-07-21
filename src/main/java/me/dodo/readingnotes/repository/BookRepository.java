@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +17,13 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     // 필요하면 여기에 커스텀 쿼리도 작성
 
     Optional<Book> findByIsbn13(String isbn13);
+
+    // 캐시 갱신 대상: 최종 갱신 시각이 오래된 도서를 오래된 순으로 조회 (ISBN13 있는 것만)
+    @Query("SELECT b FROM Book b WHERE b.deletedAt IS NULL " +
+            "AND b.isbn13 IS NOT NULL AND b.isbn13 <> '' " +
+            "AND b.updatedAt < :threshold " +
+            "ORDER BY b.updatedAt ASC")
+    List<Book> findStaleBooks(@Param("threshold") LocalDateTime threshold, Pageable pageable);
 
     // 삭제되지 않은 책 목록 조회 (검색 + 페이징)
     @Query("SELECT b FROM Book b WHERE b.deletedAt IS NULL " +
