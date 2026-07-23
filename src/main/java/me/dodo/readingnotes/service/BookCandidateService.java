@@ -64,7 +64,7 @@ public class BookCandidateService {
     }
 
     // 외부 api로 검색
-    // clients는 [KakaoBookClient, NaverBookClient] 순서임.
+    // clients는 @Order 기준 [KakaoBookClient(1), NlkBookClient(2)] 순서임.
     public List<BookCandidate> findCandidatesExternal(String rawTitle, String rawAuthor, int limit) {
         for (BookSearchClient client : clients) {
             try {
