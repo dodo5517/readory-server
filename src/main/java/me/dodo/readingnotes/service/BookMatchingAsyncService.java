@@ -7,7 +7,6 @@ import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.dto.book.BookCandidate;
 import me.dodo.readingnotes.dto.book.LinkBookRequest;
 import me.dodo.readingnotes.dto.book.MatchResult;
-import me.dodo.readingnotes.external.client.KakaoBookClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,17 +22,17 @@ public class BookMatchingAsyncService {
     private static final Logger log = LoggerFactory.getLogger(BookMatchingAsyncService.class);
 
     private final BookMatcherService bookMatcherService;
-    private final KakaoBookClient kakaoBookClient;
+    private final BookCandidateService bookCandidateService;
     private final BookLinkService bookLinkService;
     private final ObjectMapper objectMapper;
 
     @Autowired
     public BookMatchingAsyncService(BookMatcherService bookMatcherService,
-                                    KakaoBookClient kakaoBookClient,
+                                    BookCandidateService bookCandidateService,
                                     BookLinkService bookLinkService,
                                     ObjectMapper objectMapper) {
         this.bookMatcherService = bookMatcherService;
-        this.kakaoBookClient = kakaoBookClient;
+        this.bookCandidateService = bookCandidateService;
         this.bookLinkService = bookLinkService;
         this.objectMapper = objectMapper;
     }
@@ -66,8 +65,8 @@ public class BookMatchingAsyncService {
 
             log.info("기존 책 중 확실한 매칭 없음. 외부 API 검색 진행...");
         }
-        // Kakao 검색
-        List<BookCandidate> candidates = kakaoBookClient.search(record.getRawTitle(), record.getRawAuthor(), 10);
+        // 외부 API 검색 — @Order 기준 폴백 체인(Kakao → 국중도)
+        List<BookCandidate> candidates = bookCandidateService.findCandidatesExternal(record.getRawTitle(), record.getRawAuthor(), 10);
         // BookMatcher로 베스트 선택
         result = bookMatcherService.pickBest(record.getRawTitle(), record.getRawAuthor(), candidates);
         saveMatchResult(record, result); // 매칭 저장

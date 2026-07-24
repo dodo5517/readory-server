@@ -7,7 +7,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestClient;
+
+import java.util.List;
 
 @Configuration
 public class BookConfig {
@@ -18,14 +21,11 @@ public class BookConfig {
     @Value("${external.kakao.book.rest-api-key}")
     private String kakaoApiKey;
 
-    @Value("${external.naver.book.base-url}")
-    private String naverBaseUrl;
+    @Value("${external.nlk.book.base-url}")
+    private String nlkBaseUrl;
 
-    @Value("${spring.security.oauth2.client.registration.naver.client-id}")
-    private String naverClientId;
-
-    @Value("${spring.security.oauth2.client.registration.naver.client-secret}")
-    private String naverClientSecret;
+    @Value("${external.nlk.book.cert-key}")
+    private String nlkCertKey;
 
     private ClientHttpRequestFactory requestFactory() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -46,14 +46,28 @@ public class BookConfig {
                 .build();
     }
 
-    @Bean(name = "naverBookRestClient")
-    public RestClient naverBookRestClient() {
+    @Bean(name = "nlkBookRestClient")
+    public RestClient nlkBookRestClient() {
+        if (nlkCertKey == null || nlkCertKey.isBlank()) {
+            throw new IllegalStateException("국립중앙도서관(SEOJI) 인증키가 비어있습니다.");
+        }
+        // SEOJI result_style=json 응답은 Content-Type이 application/json이 아닐 수 있어(text/plain 등)
+        // Jackson 컨버터가 해당 미디어타입도 JSON으로 역직렬화하도록 확장한다.
+        MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter();
+        jacksonConverter.setSupportedMediaTypes(List.of(
+                MediaType.APPLICATION_JSON,
+                MediaType.valueOf("text/javascript"),
+                MediaType.valueOf("application/x-javascript"),
+                MediaType.TEXT_PLAIN,
+                MediaType.TEXT_HTML
+        ));
         return RestClient.builder()
                 .requestFactory(requestFactory())
-                .baseUrl(naverBaseUrl)
-                .defaultHeader("X-Naver-Client-Id", naverClientId)
-                .defaultHeader("X-Naver-Client-Secret", naverClientSecret)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .baseUrl(nlkBaseUrl)
+                .messageConverters(converters -> {
+                    converters.removeIf(c -> c instanceof MappingJackson2HttpMessageConverter);
+                    converters.add(jacksonConverter);
+                })
                 .build();
     }
 }
