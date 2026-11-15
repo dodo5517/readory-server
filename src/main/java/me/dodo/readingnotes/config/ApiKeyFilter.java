@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import me.dodo.readingnotes.domain.User;
 import me.dodo.readingnotes.repository.UserRepository;
 import me.dodo.readingnotes.util.ApiErrorWriter;
-import org.jspecify.annotations.NonNull;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
