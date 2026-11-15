@@ -27,6 +27,16 @@ jobs:
       - name: Build bootJar # Spring Boot 빌드
         run: ./gradlew bootJar
 
+      - name: Connect to Tailscale # 러너를 tailnet에 임시 합류 (작업 후 자동 삭제)
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Wait for Pi # Pi와 tailnet 연결 확인
+        run: tailscale ping -c 1 ${{ secrets.SSH_HOST }}
+
       - name: Setup SSH Key # SSH 키 설정
         run: |
           mkdir -p ~/.ssh
