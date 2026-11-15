@@ -95,8 +95,6 @@ public class ApiLogInterceptor implements HandlerInterceptor {
         if (path == null) return false;
         return path.equals("/error")
                 || path.startsWith("/actuator")
-                || path.startsWith("/swagger-ui")
-                || path.startsWith("/v3/api-docs")
                 || path.startsWith("/favicon.ico")
                 || path.startsWith("/css")
                 || path.startsWith("/js")

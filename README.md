@@ -45,7 +45,6 @@
 | 이미지 처리 | Thumbnailator |
 | 문자열 유사도 | Apache Commons Text (JaroWinkler) |
 | 인프라 | Raspberry Pi, GitHub Actions |
-| API 문서 | Springdoc OpenAPI (Swagger UI) |
 
 ---
 
@@ -53,7 +52,7 @@
 
 ```
 me.dodo.readingnotes
-├── config          # Security, Swagger, OAuth2, 필터 등 설정
+├── config          # Security, OAuth2, 필터 등 설정
 ├── controller      # REST API 엔드포인트
 ├── domain          # JPA 엔티티
 ├── dto             # 요청/응답 DTO
@@ -235,10 +234,3 @@ OAUTH2_KAKAO_REDIRECT_URI=
 
 ```
 
----
-
-## API 문서
-
-```
-http://localhost:8080/swagger-ui/index.html
-```
