@@ -29,7 +29,6 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.11'
     implementation 'org.apache.commons:commons-lang3:3.18.0'
@@ -44,7 +43,9 @@ dependencies {
     implementation 'eu.bitwalker:UserAgentUtils:1.21'
 
     // Supabase Storage (S3 호환 방식 연결)
-    implementation "software.amazon.awssdk:s3:$awsSdkVersion"
+    implementation("software.amazon.awssdk:s3:$awsSdkVersion") {
+        exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+    }
     implementation "software.amazon.awssdk:auth:$awsSdkVersion"
 
 
