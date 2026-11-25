@@ -59,6 +59,7 @@ public class BookMatchingAsyncService {
             matchAndSave(record);
         } catch (Exception e) {
             log.warn("[BookMatching] 매칭 실패 recordId={}", event.recordId(), e);
+            throw e; // 트랜잭션이 커밋되지 않고 롤백되도록 다시 던짐
         }
     }
 
