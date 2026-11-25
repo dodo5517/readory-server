@@ -10,6 +10,7 @@ import me.dodo.readingnotes.dto.reading.HighlightItem;
 import me.dodo.readingnotes.dto.reading.ReadingRecordItem;
 import me.dodo.readingnotes.dto.reading.ReadingRecordRequest;
 import me.dodo.readingnotes.dto.reading.ReadingRecordResponse;
+import me.dodo.readingnotes.event.BookMatchRequestedEvent;
 import me.dodo.readingnotes.repository.BookCommentRepository;
 import me.dodo.readingnotes.repository.BookRepository;
 import me.dodo.readingnotes.repository.ReadingRecordRepository;
@@ -19,6 +20,7 @@ import me.dodo.readingnotes.util.EbookSourceCleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,7 +42,7 @@ public class ReadingRecordService {
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
     private final BookLinkService bookLinkService;
-    private final BookMatchingAsyncService bookMatchingAsyncService;
+    private final ApplicationEventPublisher eventPublisher;
     private final BookCommentRepository bookCommentRepository;
     private final CleanBatchService cleanBatchService;
     private final RecordHighlightRepository recordHighlightRepository;
@@ -55,7 +57,7 @@ public class ReadingRecordService {
                                 BookRepository bookRepository,
                                 UserRepository userRepository,
                                 BookLinkService bookLinkService,
-                                BookMatchingAsyncService bookMatchingAsyncService,
+                                ApplicationEventPublisher eventPublisher,
                                 BookCommentRepository bookCommentRepository,
                                 CleanBatchService cleanBatchService,
                                 RecordHighlightRepository recordHighlightRepository) {
@@ -63,7 +65,7 @@ public class ReadingRecordService {
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
         this.bookLinkService = bookLinkService;
-        this.bookMatchingAsyncService = bookMatchingAsyncService;
+        this.eventPublisher = eventPublisher;
         this.bookCommentRepository = bookCommentRepository;
         this.cleanBatchService = cleanBatchService;
         this.recordHighlightRepository = recordHighlightRepository;
@@ -91,7 +93,7 @@ public class ReadingRecordService {
         // 제목+작가 모두 있을 경우
         if (present(saved.getRawTitle()) && present(saved.getRawAuthor())) {
             // 책 검색 후 매칭 (비동기, 바로 리턴)
-            bookMatchingAsyncService.matchAndSave(saved);
+            eventPublisher.publishEvent(new BookMatchRequestedEvent(saved.getId()));
         }
         return saved;
     }
@@ -272,7 +274,7 @@ public class ReadingRecordService {
             // 제목+작가 모두 있을 경우 책 정보 재매칭
             if (present(record.getRawTitle()) && present(record.getRawAuthor())) {
                 // 책 검색 후 매칭 (비동기, 바로 리턴)
-                bookMatchingAsyncService.matchAndSave(record);
+                eventPublisher.publishEvent(new BookMatchRequestedEvent(record.getId()));
             }
         }
         log.debug("saved record: {}", request);
@@ -427,7 +429,7 @@ public class ReadingRecordService {
 
             if (present(record.getRawTitle()) && present(record.getRawAuthor())) {
                 // 책 검색 후 매칭 (비동기, 바로 리턴)
-                bookMatchingAsyncService.matchAndSave(record);
+                eventPublisher.publishEvent(new BookMatchRequestedEvent(record.getId()));
             }
         }
 

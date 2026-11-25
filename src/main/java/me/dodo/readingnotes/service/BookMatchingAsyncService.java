@@ -1,17 +1,22 @@
 package me.dodo.readingnotes.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.transaction.Transactional;
 import me.dodo.readingnotes.domain.Book;
 import me.dodo.readingnotes.domain.ReadingRecord;
 import me.dodo.readingnotes.dto.book.BookCandidate;
 import me.dodo.readingnotes.dto.book.LinkBookRequest;
 import me.dodo.readingnotes.dto.book.MatchResult;
+import me.dodo.readingnotes.event.BookMatchRequestedEvent;
+import me.dodo.readingnotes.repository.ReadingRecordRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
 import java.util.Map;
@@ -25,22 +30,41 @@ public class BookMatchingAsyncService {
     private final BookCandidateService bookCandidateService;
     private final BookLinkService bookLinkService;
     private final ObjectMapper objectMapper;
+    private final ReadingRecordRepository readingRecordRepository;
 
     @Autowired
     public BookMatchingAsyncService(BookMatcherService bookMatcherService,
                                     BookCandidateService bookCandidateService,
                                     BookLinkService bookLinkService,
-                                    ObjectMapper objectMapper) {
+                                    ObjectMapper objectMapper,
+                                    ReadingRecordRepository readingRecordRepository) {
         this.bookMatcherService = bookMatcherService;
         this.bookCandidateService = bookCandidateService;
         this.bookLinkService = bookLinkService;
         this.objectMapper = objectMapper;
+        this.readingRecordRepository = readingRecordRepository;
+    }
+
+    // 기록 저장 트랜잭션 커밋 이후 비동기로 책 매칭 실행
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void onBookMatchRequested(BookMatchRequestedEvent event) {
+        ReadingRecord record = readingRecordRepository.findById(event.recordId()).orElse(null);
+        if (record == null) {
+            log.info("[BookMatching] 기록 없음(삭제됨), 스킵 recordId={}", event.recordId());
+            return;
+        }
+        try {
+            matchAndSave(record);
+        } catch (Exception e) {
+            log.warn("[BookMatching] 매칭 실패 recordId={}", event.recordId(), e);
+            throw e; // 트랜잭션이 커밋되지 않고 롤백되도록 다시 던짐
+        }
     }
 
     // 책 검색 후 매칭
-    @Async
-    @Transactional
-    public void matchAndSave(ReadingRecord record) {
+    private void matchAndSave(ReadingRecord record) {
         // 기존 책 테이블에서 책 검색 (최대 10개)
         List<Book> existingBooks = bookMatcherService.fetchCandidatesFromBookTable(
                 record.getRawTitle(), record.getRawAuthor(), 10);
