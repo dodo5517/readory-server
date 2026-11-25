@@ -35,7 +35,7 @@ jobs:
           tags: tag:ci
 
       - name: Wait for Pi # Pi와 tailnet 연결 확인
-        run: tailscale ping -c 1 ${{ secrets.SSH_HOST }}
+        run: tailscale ping --until-direct=false -c 1 ${{ secrets.SSH_HOST }}
 
       - name: Setup SSH Key # SSH 키 설정
         run: |
